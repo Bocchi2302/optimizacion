@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Software de Optimización</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f7f6;
+        }
+        .container {
+            text-align: center;
+        }
+        .btn-lanzador {
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            color: white;
+            background-color: #007bff;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn-lanzador:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Bienvenido al Optimizador Lineal</h1>
+        <p>Seleccione el módulo que desea utilizar:</p>
+        <!-- Redirección al Blueprint del Método Gráfico -->
+        <a href="{{ url_for('grafico_bp.vista_principal') }}" class="btn-lanzador">
+            Ingresar al Método Gráfico
+        </a>
+    </div>
+</body>
+</html>
+

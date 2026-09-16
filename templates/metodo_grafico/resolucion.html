@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método Gráfico</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f8f9fa; }
+        .contenedor-principal { display: flex; flex-wrap: wrap; gap: 20px; }
+        .formulario { padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 1; min-width: 350px;}
+        .grafica-container { padding: 20px; background: white; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); flex: 2; min-width: 500px;}
+        .resultados-container { margin-top: 20px; padding: 20px; background: #d4edda; border-radius: 8px; border: 1px solid #c3e6cb;}
+        .error { color: #721c24; background-color: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; font-weight: bold; margin-bottom: 20px;}
+        .restriccion-row { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        input[type="number"], select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        input[type="number"] { width: 70px; }
+        button.btn-calcular { padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%;}
+        button.btn-calcular:hover { background: #0056b3; }
+        button.btn-agregar { padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 20px;}
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; background: white;}
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background-color: #f2f2f2; }
+        .row-optimo { background-color: #fff3cd; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <a href="{{ url_for('index') }}" style="text-decoration: none; color: #007bff; font-weight: bold;">⬅ Volver al Inicio</a>
+    
+    <h1 style="color: #333; margin-top: 20px;">Módulo: Método Gráfico</h1>
+    
+    {% if error %}
+        <div class="error">{{ error }}</div>
+    {% endif %}
+    
+    <div class="contenedor-principal">
+        <!-- Columna 1: Formulario -->
+        <div class="formulario">
+            <form method="POST">
+                <h3 style="margin-top: 0;">Función Objetivo (Z)</h3>
+                <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <select name="tipo_opt">
+                        <option value="max">Maximizar</option>
+                        <option value="min">Minimizar</option>
+                    </select>
+                    <span>Z =</span>
+                    <input type="number" name="z_x" step="any" required placeholder="X1"> X1 + 
+                    <input type="number" name="z_y" step="any" required placeholder="X2"> X2
+                </div>
+
+                <h3>Restricciones</h3>
+                <div id="restricciones-container">
+                    <!-- Restricción inicial por defecto -->
+                    <div class="restriccion-row">
+                        <input type="number" name="r_x[]" step="any" required placeholder="X1"> X1 + 
+                        <input type="number" name="r_y[]" step="any" required placeholder="X2"> X2 
+                        <select name="r_op[]">
+                            <option value="<=">≤</option>
+                            <option value=">=">≥</option>
+                        </select>
+                        <input type="number" name="r_c[]" step="any" required placeholder="C">
+                    </div>
+                    <div class="restriccion-row">
+                        <input type="number" name="r_x[]" step="any" required placeholder="X1"> X1 + 
+                        <input type="number" name="r_y[]" step="any" required placeholder="X2"> X2 
+                        <select name="r_op[]">
+                            <option value="<=">≤</option>
+                            <option value=">=">≥</option>
+                        </select>
+                        <input type="number" name="r_c[]" step="any" required placeholder="C">
+                    </div>
+                </div>
+                
+                <button type="button" class="btn-agregar" onclick="agregarRestriccion()">+ Agregar Restricción</button>
+                
+                <!-- Restricciones de no negatividad fijas -->
+                <p style="color: #555; font-size: 0.9em;"><em>Nota: X1 ≥ 0, X2 ≥ 0 se asumen por defecto.</em></p>
+                
+                <button type="submit" class="btn-calcular">Calcular y Graficar</button>
+            </form>
+        </div>
+
+        <!-- Columna 2: Gráfica y Resultados -->
+        {% if grafica %}
+        <div class="grafica-container">
+            <h3 style="margin-top: 0;">Solución Gráfica</h3>
+            <img src="data:image/png;base64,{{ grafica }}" alt="Gráfica de Optimización" style="max-width: 100%; border-radius: 4px;">
+            
+            {% if resultados %}
+            <div class="resultados-container">
+                <h3 style="margin-top: 0; color: #155724;">Resultados de Optimización</h3>
+                <p><strong>Operación:</strong> {{ "Maximización" if resultados.tipo == 'max' else "Minimización" }}</p>
+                <p><strong>Valor Óptimo (Z):</strong> {{ "%.2f"|format(resultados.optimo.z) }}</p>
+                <p><strong>Punto Óptimo:</strong> ( X1 = {{ "%.2f"|format(resultados.optimo.x) }} , X2 = {{ "%.2f"|format(resultados.optimo.y) }} )</p>
+                
+                <h4 style="margin-bottom: 5px; margin-top: 20px;">Evaluación de Vértices</h4>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>X1</th>
+                            <th>X2</th>
+                            <th>Valor Z</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vertice in resultados.vertices %}
+                        <tr class="{% if vertice == resultados.optimo %}row-optimo{% endif %}">
+                            <td>{{ "%.2f"|format(vertice.x) }}</td>
+                            <td>{{ "%.2f"|format(vertice.y) }}</td>
+                            <td>{{ "%.2f"|format(vertice.z) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Lógica Frontend: JS Dinámico embebido -->
+    <script>
+        function agregarRestriccion() {
+            const container = document.getElementById('restricciones-container');
+            const row = document.createElement('div');
+            row.className = 'restriccion-row';
+            row.innerHTML = `
+                <input type="number" name="r_x[]" step="any" required placeholder="X1"> X1 + 
+                <input type="number" name="r_y[]" step="any" required placeholder="X2"> X2 
+                <select name="r_op[]">
+                    <option value="<=">≤</option>
+                    <option value=">=">≥</option>
+                </select>
+                <input type="number" name="r_c[]" step="any" required placeholder="C">
+                <button type="button" onclick="this.parentElement.remove()" style="padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;">Eliminar</button>
+            `;
+            container.appendChild(row);
+        }
+    </script>
+</body>
+</html>
