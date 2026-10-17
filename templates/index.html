@@ -3,45 +3,331 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Software de Optimización</title>
+    <title>OptiLab · USTA 2025</title>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background-color: #f4f7f6;
+        *{margin:0;padding:0;box-sizing:border-box}
+
+        body{
+            min-height:100vh;
+            background:#ffffff;
+            font-family:'Inter',system-ui,sans-serif;
+            color:#1a1a2e;
+            overflow-x:hidden;
         }
-        .container {
-            text-align: center;
+
+        /* ── canvas de partículas ── */
+        #particles{position:fixed;inset:0;z-index:0;pointer-events:none}
+
+        /* ── noise grain overlay ── */
+        body::after{
+            content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+            opacity:.02;
+            background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
-        .btn-lanzador {
-            padding: 15px 30px;
-            font-size: 1.2rem;
-            color: white;
-            background-color: #007bff;
-            border: none;
-            border-radius: 8px;
-            text-decoration: none;
-            cursor: pointer;
-            transition: background-color 0.3s;
+
+        /* ── layout ── */
+        .page{
+            position:relative;z-index:1;
+            display:grid;
+            grid-template-rows:auto 1fr auto;
+            min-height:100vh;
+            padding:clamp(16px,4vw,40px);
         }
-        .btn-lanzador:hover {
-            background-color: #0056b3;
+
+        /* ── topbar ── */
+        .topbar{
+            display:flex;align-items:center;justify-content:space-between;
+            padding-bottom:20px;
+            border-bottom:1px solid rgba(0,0,0,.06);
+            opacity:0;animation:fadeUp .6s .2s ease forwards;
         }
+        .topbar .brand{
+            display:flex;align-items:center;gap:12px;
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:700;font-size:1.15rem;letter-spacing:-.02em;
+        }
+        .topbar .brand .dot{
+            width:8px;height:8px;border-radius:50%;
+            background:#22c55e;
+            box-shadow:0 0 8px #22c55e88;
+            animation:pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+
+        .topbar .tag{
+            font-size:.75rem;
+            background:rgba(0,0,0,.04);
+            border:1px solid rgba(0,0,0,.08);
+            padding:4px 12px;border-radius:20px;
+            color:#64748b;letter-spacing:.04em;
+            text-transform:uppercase;font-weight:600;
+        }
+
+        /* ── hero center ── */
+        .hero{
+            display:flex;flex-direction:column;
+            align-items:center;justify-content:center;
+            gap:32px;
+            text-align:center;
+            padding:40px 0;
+        }
+
+        .logo-box{
+            position:relative;
+            opacity:0;animation:scaleIn .7s .35s cubic-bezier(.16,1,.3,1) forwards;
+        }
+        .logo-box img{
+            width:clamp(140px,22vw,220px);height:auto;
+            filter:drop-shadow(0 0 40px rgba(201,151,0,.18));
+            transition:transform .5s cubic-bezier(.16,1,.3,1);
+        }
+        .logo-box:hover img{transform:scale(1.06) rotate(-1deg)}
+
+        /* anillo animado detrás del logo */
+        .logo-ring{
+            position:absolute;
+            inset:-24px;border-radius:50%;
+            border:1.5px dashed rgba(201,151,0,.2);
+            animation:spin 30s linear infinite;
+            pointer-events:none;
+        }
+        @keyframes spin{to{transform:rotate(360deg)}}
+
+        .hero-copy{
+            max-width:540px;
+            opacity:0;animation:fadeUp .65s .5s ease forwards;
+        }
+        .hero-copy h1{
+            font-family:'Space Grotesk',sans-serif;
+            font-size:clamp(2rem,5vw,3.2rem);
+            font-weight:700;
+            line-height:1.1;
+            letter-spacing:-.03em;
+            margin-bottom:14px;
+        }
+        .hero-copy h1 .accent{
+            background:linear-gradient(135deg,#fbbf24,#f59e0b,#d97706);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        }
+        .hero-copy p{
+            color:#64748b;font-size:clamp(.95rem,1.8vw,1.1rem);
+            line-height:1.65;
+        }
+
+        /* ── módulo card ── */
+        .modules{
+            display:flex;flex-direction:column;gap:14px;
+            width:100%;max-width:460px;
+            opacity:0;animation:fadeUp .65s .65s ease forwards;
+        }
+
+        .mod-card{
+            position:relative;
+            display:flex;align-items:center;gap:18px;
+            padding:20px 24px;
+            border-radius:16px;
+            background:rgba(0,0,0,.02);
+            border:1px solid rgba(0,0,0,.07);
+            text-decoration:none;color:inherit;
+            transition:all .35s cubic-bezier(.16,1,.3,1);
+            overflow:hidden;
+            cursor:pointer;
+        }
+        /* borde gradiente al hover */
+        .mod-card::before{
+            content:'';position:absolute;inset:0;border-radius:16px;padding:1px;
+            background:linear-gradient(135deg,#fbbf2400,#fbbf2400);
+            -webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+            -webkit-mask-composite:xor;mask-composite:exclude;
+            transition:background .4s ease;pointer-events:none;
+        }
+        .mod-card:hover::before{
+            background:linear-gradient(135deg,#fbbf24,#3b82f6);
+        }
+        .mod-card:hover{
+            background:rgba(0,0,0,.04);
+            transform:translateY(-3px);
+            box-shadow:0 12px 40px -10px rgba(201,151,0,.15);
+        }
+
+        .mod-icon{
+            width:50px;height:50px;flex-shrink:0;
+            border-radius:14px;
+            display:grid;place-items:center;
+            font-size:1.4rem;
+            background:linear-gradient(135deg,#1e3a5f,#0f2942);
+            border:1px solid rgba(0,0,0,.06);
+        }
+        .mod-info h3{
+            font-family:'Space Grotesk',sans-serif;
+            font-weight:600;font-size:1.05rem;
+            margin-bottom:3px;
+        }
+        .mod-info span{font-size:.82rem;color:#94a3b8}
+
+        .mod-arrow{
+            margin-left:auto;
+            font-size:1.1rem;color:#94a3b8;
+            transition:all .3s ease;
+        }
+        .mod-card:hover .mod-arrow{
+            color:#d97706;transform:translateX(5px);
+        }
+
+        /* ── stats row ── */
+        .stats{
+            display:flex;gap:clamp(20px,4vw,48px);
+            justify-content:center;
+            margin-top:12px;
+            opacity:0;animation:fadeUp .65s .8s ease forwards;
+        }
+        .stat{text-align:center}
+        .stat .num{
+            font-family:'Space Grotesk',sans-serif;
+            font-size:1.6rem;font-weight:700;
+            background:linear-gradient(135deg,#1e293b,#475569);
+            -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+        }
+        .stat .label{font-size:.72rem;color:#94a3b8;text-transform:uppercase;letter-spacing:.06em;margin-top:2px}
+
+        /* ── footer ── */
+        .foot{
+            display:flex;align-items:center;justify-content:center;
+            gap:8px;
+            padding-top:20px;
+            border-top:1px solid rgba(0,0,0,.06);
+            font-size:.78rem;color:#94a3b8;
+            opacity:0;animation:fadeUp .5s .9s ease forwards;
+        }
+        .foot a{color:#64748b;text-decoration:none;transition:color .2s}
+        .foot a:hover{color:#d97706}
+
+        /* ── keyframes ── */
+        @keyframes fadeUp{
+            from{opacity:0;transform:translateY(18px)}
+            to{opacity:1;transform:translateY(0)}
+        }
+        @keyframes scaleIn{
+            from{opacity:0;transform:scale(.85)}
+            to{opacity:1;transform:scale(1)}
+        }
+
+        /* ── responsive ── */
+        @media(max-width:500px){
+            .topbar{flex-direction:column;gap:10px;align-items:flex-start}
+            .stats{flex-wrap:wrap}
+        }
+
+        /* ── easter egg: konami hint ── */
+        .easter-egg{
+            position:fixed;bottom:20px;right:20px;
+            font-size:.7rem;color:#d4d4d8;z-index:10;
+            transition:color .3s;cursor:default;
+        }
+        .easter-egg:hover{color:#94a3b8}
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Bienvenido al Optimizador Lineal</h1>
-        <p>Seleccione el módulo que desea utilizar:</p>
-        <!-- Redirección al Blueprint del Método Gráfico -->
-        <a href="{{ url_for('grafico_bp.vista_principal') }}" class="btn-lanzador">
-            Ingresar al Método Gráfico
-        </a>
-    </div>
+<canvas id="particles"></canvas>
+
+<div class="page">
+    <!-- top -->
+    <header class="topbar">
+        <div class="brand"><span class="dot"></span>   </div>
+    </header>
+
+    <!-- hero -->
+    <section class="hero">
+        <div class="logo-box">
+            <div class="logo-ring"></div>
+            <img src="{{ url_for('static', filename='USTA_2025.png') }}" alt="USTA 2025">
+        </div>
+
+        <div class="hero-copy">
+            <h1>Resuelve problemas de <span class="accent">Optimización Lineal</span></h1>
+            <p>Formulá, graficá y encontrá la solución óptima de modelos de dos variables — todo directo desde  este programa.</p>
+        </div>
+
+        <nav class="modules">
+            <a href="{{ url_for('grafico_bp.vista_principal') }}" class="mod-card">
+                <div class="mod-icon">📐</div>
+                <div class="mod-info">
+                    <h3>Método Gráfico</h3>
+                    <span>Región factible · Vértices · Solución óptima</span>
+                </div>
+                <span class="mod-arrow">→</span>
+            </a>
+            <!-- Si se agregan más módulos en el futuro, duplicar el bloque mod-card -->
+        </nav>
+
+        <div class="stats">
+            <div class="stat"><div class="num">2</div><div class="label">Variables</div></div>
+            <div class="stat"><div class="num">∞</div><div class="label">Restricciones</div></div>
+            <div class="stat"><div class="num">0s</div><div class="label">Cálculo</div></div>
+        </div>
+    </section>
+
+    <!-- foot -->
+    <footer class="foot">
+        <span>© 2025</span>
+        <span>·</span>
+        <a href="#">Universidad Santo Tomás</a>
+        <span>·</span>
+        <span>Facultad de Ingeniería</span>
+    </footer>
+</div>
+
+<span class="easter-egg" title="↑↑↓↓←→←→BA">⌘</span>
+
+<script>
+/* ─── Minimal particle field ─── */
+(function(){
+    const c=document.getElementById('particles'),ctx=c.getContext('2d');
+    let w,h,pts=[];
+    function resize(){w=c.width=innerWidth;h=c.height=innerHeight;init()}
+    function init(){
+        pts=[];
+        const n=Math.floor((w*h)/18000);
+        for(let i=0;i<n;i++) pts.push({
+            x:Math.random()*w,y:Math.random()*h,
+            r:Math.random()*1.2+.3,
+            dx:(Math.random()-.5)*.18,
+            dy:(Math.random()-.5)*.18,
+            o:Math.random()*.35+.08
+        });
+    }
+    function draw(){
+        ctx.clearRect(0,0,w,h);
+        for(const p of pts){
+            p.x+=p.dx;p.y+=p.dy;
+            if(p.x<0)p.x=w;if(p.x>w)p.x=0;
+            if(p.y<0)p.y=h;if(p.y>h)p.y=0;
+            ctx.beginPath();
+            ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+            ctx.fillStyle=`rgba(201,151,0,${p.o})`;
+            ctx.fill();
+        }
+        // conexiones cercanas
+        for(let i=0;i<pts.length;i++){
+            for(let j=i+1;j<pts.length;j++){
+                const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y;
+                const d=dx*dx+dy*dy;
+                if(d<14000){
+                    ctx.beginPath();
+                    ctx.moveTo(pts[i].x,pts[i].y);
+                    ctx.lineTo(pts[j].x,pts[j].y);
+                    ctx.strokeStyle=`rgba(201,151,0,${.06*(1-d/14000)})`;
+                    ctx.lineWidth=.5;
+                    ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+    addEventListener('resize',resize);
+    resize();draw();
+})();
+</script>
 </body>
 </html>
-
