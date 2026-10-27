@@ -7,6 +7,7 @@ app = Flask(__name__)
 # Registrar el Blueprint del Método Gráfico
 # Todo lo que esté en grafico_bp tendrá el prefijo /metodo_grafico
 app.register_blueprint(grafico_bp, url_prefix='/metodo_grafico')
+app.register_blueprint(vogel_bp, url_prefix='/metodo_vogel')
 
 # Ruta raíz: No usar 
 @app.route('/')
