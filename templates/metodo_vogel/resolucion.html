@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método de aproximación de Vogel</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f5f7fa; color: #263238; }
+        main { max-width: 1100px; margin: 0 auto; }
+        .panel { margin-top: 20px; padding: 22px; background: white; border-radius: 8px; box-shadow: 0 2px 8px #00000012; overflow-x: auto; }
+        .volver { color: #1769aa; text-decoration: none; font-weight: bold; }
+        .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+        button { padding: 10px 14px; border: 0; border-radius: 5px; color: white; background: #1769aa; cursor: pointer; }
+        button.secundario { background: #536878; }
+        button.calcular { width: 100%; margin-top: 18px; background: #218838; font-size: 1rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+        th, td { padding: 9px; border: 1px solid #d6dce1; text-align: center; }
+        th { background: #edf2f6; }
+        input[type="number"] { box-sizing: border-box; width: 95px; padding: 8px; border: 1px solid #b9c3cc; border-radius: 4px; }
+        .error { margin-top: 18px; padding: 12px; border: 1px solid #efb4b4; border-radius: 5px; color: #842029; background: #f8d7da; }
+        .resultado { margin-top: 24px; padding: 18px; border: 1px solid #b7dfc1; border-radius: 6px; background: #e9f7ed; }
+        .nota { color: #4c5964; }
+        .pasos { text-align: left; }
+        @media (max-width: 600px) { body { padding: 14px; } .panel { padding: 14px; } }
+    </style>
+</head>
+<body>
+<main>
+    <a class="volver" href="{{ url_for('index') }}">← Volver al inicio</a>
+    <h1>Método de aproximación de Vogel</h1>
+    <p>Ingresa los costos unitarios, la oferta de cada origen y la demanda de cada destino.</p>
+    <section class="panel">
+        <form method="post">
+            <input type="hidden" id="num-origenes" name="num_origenes" value="{{ filas }}">
+            <input type="hidden" id="num-destinos" name="num_destinos" value="{{ columnas }}">
+            <div class="acciones">
+                <button class="secundario" type="button" id="agregar-origen">+ Agregar origen</button>
+                <button class="secundario" type="button" id="agregar-destino">+ Agregar destino</button>
+            </div>
+            <table id="tabla-transporte">
+                <thead>
+                    <tr id="encabezados">
+                        <th>Origen / destino</th>
+                        {% for j in range(columnas) %}<th>Destino {{ j + 1 }}</th>{% endfor %}
+                        <th>Oferta</th>
+                    </tr>
+                </thead>
+                <tbody id="origenes">
+                    {% for i in range(filas) %}
+                    <tr>
+                        <th>Origen {{ i + 1 }}</th>
+                        {% for j in range(columnas) %}
+                        <td><input type="number" step="any" min="0" required aria-label="Costo origen {{ i + 1 }} destino {{ j + 1 }}" name="costo_{{ i }}_{{ j }}" value="{{ request.form.get('costo_' ~ i ~ '_' ~ j, '') }}"></td>
+                        {% endfor %}
+                        <td><input type="number" step="any" min="0" required aria-label="Oferta origen {{ i + 1 }}" name="oferta_{{ i }}" value="{{ request.form.get('oferta_' ~ i, '') }}"></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr id="demandas">
+                        <th>Demanda</th>
+                        {% for j in range(columnas) %}
+                        <td><input type="number" step="any" min="0" required aria-label="Demanda destino {{ j + 1 }}" name="demanda_{{ j }}" value="{{ request.form.get('demanda_' ~ j, '') }}"></td>
+                        {% endfor %}
+                        <td>—</td>
+                    </tr>
+                </tfoot>
+            </table>
+            <button class="calcular" type="submit">Calcular solución inicial</button>
+        </form>
+    </section>
+
+    {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+
+    {% if resultados %}
+    <section class="panel">
+        <h2>Solución inicial factible</h2>
+        <p><strong>Costo total de transporte:</strong> {{ resultados.costo_total }}</p>
+        {% if resultados.oferta_total != resultados.demanda_total %}
+        <p>La oferta y la demanda estaban desbalanceadas. Se agregó un {{ "origen" if resultados.oferta_total < resultados.demanda_total else "destino" }} ficticio con costo cero para balancear el problema.</p>
+        {% endif %}
+        <p class="nota">Vogel obtiene una solución inicial factible; no garantiza por sí solo que sea la solución de costo mínimo.</p>
+        <h3>Asignaciones</h3>
+        <table>
+            <thead><tr><th>Origen / destino</th>{% for destino in resultados.destinos %}<th>{{ destino }}</th>{% endfor %}</tr></thead>
+            <tbody>
+                {% for i in range(resultados.origenes|length) %}
+                <tr><th>{{ resultados.origenes[i] }}</th>
+                    {% for j in range(resultados.destinos|length) %}
+                    <td>{{ resultados.asignaciones[i][j] }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <h3>Iteraciones del método</h3>
+        <table class="pasos">
+            <thead><tr><th>Paso</th><th>Selección</th><th>Celda asignada</th><th>Unidades</th><th>Costo unitario</th></tr></thead>
+            <tbody>
+                {% for paso in resultados.pasos %}
+                <tr>
+                    <td>{{ paso.numero }}</td>
+                    <td>{{ "Origen" if paso.tipo == "origen" else "Destino" }} {{ paso.indice }}</td>
+                    <td>{{ paso.origen }} → {{ paso.destino }}</td>
+                    <td>{{ paso.cantidad }}</td>
+                    <td>{{ paso.costo_unitario }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+    {% endif %}
+</main>
+<script>
+    const limite = {{ max_dimension }};
+    const origenes = document.getElementById('origenes');
+    const encabezados = document.getElementById('encabezados');
+    const demandas = document.getElementById('demandas');
+    const numeroOrigenes = document.getElementById('num-origenes');
+    const numeroDestinos = document.getElementById('num-destinos');
+
+    document.getElementById('agregar-origen').addEventListener('click', () => {
+        const i = Number(numeroOrigenes.value);
+        const jTotal = Number(numeroDestinos.value);
+        if (i >= limite) return;
+        const fila = document.createElement('tr');
+        fila.innerHTML = `<th>Origen ${i + 1}</th>${Array.from({length: jTotal}, (_, j) => `<td><input type="number" step="any" min="0" required aria-label="Costo origen ${i + 1} destino ${j + 1}" name="costo_${i}_${j}"></td>`).join('')}<td><input type="number" step="any" min="0" required aria-label="Oferta origen ${i + 1}" name="oferta_${i}"></td>`;
+        origenes.appendChild(fila);
+        numeroOrigenes.value = i + 1;
+        encabezados.cells[0].textContent = 'Origen / destino';
+    });
+
+    document.getElementById('agregar-destino').addEventListener('click', () => {
+        const j = Number(numeroDestinos.value);
+        const iTotal = Number(numeroOrigenes.value);
+        if (j >= limite) return;
+        const encabezado = document.createElement('th');
+        encabezado.textContent = `Destino ${j + 1}`;
+        encabezados.insertBefore(encabezado, encabezados.lastElementChild);
+        Array.from(origenes.rows).forEach((fila, i) => {
+            const celda = document.createElement('td');
+            celda.innerHTML = `<input type="number" step="any" min="0" required aria-label="Costo origen ${i + 1} destino ${j + 1}" name="costo_${i}_${j}">`;
+            fila.insertBefore(celda, fila.lastElementChild);
+        });
+        const demanda = document.createElement('td');
+        demanda.innerHTML = `<input type="number" step="any" min="0" required aria-label="Demanda destino ${j + 1}" name="demanda_${j}">`;
+        demandas.insertBefore(demanda, demandas.lastElementChild);
+        numeroDestinos.value = j + 1;
+    });
+</script>
+</body>
+</html>
