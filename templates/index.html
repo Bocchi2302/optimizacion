@@ -31,17 +31,22 @@
         .btn-lanzador:hover {
             background-color: #0056b3;
         }
+        .btn-vogel {
+            display: inline-block;
+            margin: 8px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Bienvenido al Optimizador Lineal</h1>
         <p>Seleccione el módulo que desea utilizar:</p>
-        <!-- Redirección al Blueprint del Método Gráfico -->
         <a href="{{ url_for('grafico_bp.vista_principal') }}" class="btn-lanzador">
             Ingresar al Método Gráfico
+        </a>
+        <a href="{{ url_for('vogel_bp.vista_principal') }}" class="btn-lanzador btn-vogel">
+            Ingresar al Método de Vogel
         </a>
     </div>
 </body>
 </html>
-
