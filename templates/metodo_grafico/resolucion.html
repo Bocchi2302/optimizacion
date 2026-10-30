@@ -14,6 +14,7 @@
         .restriccion-row { margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
         input[type="number"], select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         input[type="number"] { width: 70px; }
+        textarea { width: 100%; min-height: 100px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; resize: vertical; font-family: inherit; }
         button.btn-calcular { padding: 12px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%;}
         button.btn-calcular:hover { background: #0056b3; }
         button.btn-agregar { padding: 8px 15px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; margin-bottom: 20px;}
@@ -36,6 +37,9 @@
         <!-- Columna 1: Formulario -->
         <div class="formulario">
             <form method="POST">
+                <h3 style="margin-top: 0;">Contexto del ejercicio</h3>
+                <textarea name="contexto" placeholder="Describe aquí el contexto o enunciado del ejercicio (opcional).">{{ contexto }}</textarea>
+
                 <h3 style="margin-top: 0;">Función Objetivo (Z)</h3>
                 <div style="margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
                     <select name="tipo_opt">
@@ -91,6 +95,10 @@
                 <p><strong>Operación:</strong> {{ "Maximización" if resultados.tipo == 'max' else "Minimización" }}</p>
                 <p><strong>Valor Óptimo (Z):</strong> {{ "%.2f"|format(resultados.optimo.z) }}</p>
                 <p><strong>Punto Óptimo:</strong> ( X1 = {{ "%.2f"|format(resultados.optimo.x) }} , X2 = {{ "%.2f"|format(resultados.optimo.y) }} )</p>
+                {% if resultados.contexto %}
+                <p><strong>Contexto del ejercicio:</strong> {{ resultados.contexto }}</p>
+                {% endif %}
+                <p><strong>Conclusión:</strong> {{ resultados.mensaje }}</p>
                 
                 <h4 style="margin-bottom: 5px; margin-top: 20px;">Evaluación de Vértices</h4>
                 <table>
