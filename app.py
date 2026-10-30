@@ -1,12 +1,14 @@
 # app.py
 from flask import Flask, render_template
 from blueprints.grafico_bp import grafico_bp
+from blueprints.regresion_bp import regresion_bp
 
 app = Flask(__name__)
 
 # Registrar el Blueprint del Método Gráfico
 # Todo lo que esté en grafico_bp tendrá el prefijo /metodo_grafico
 app.register_blueprint(grafico_bp, url_prefix='/metodo_grafico')
+app.register_blueprint(regresion_bp, url_prefix='/regresion_simplex')
 
 # Ruta raíz: No usar 
 @app.route('/')
