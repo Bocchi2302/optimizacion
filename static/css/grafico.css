@@ -48,6 +48,14 @@ body {
     flex-wrap: wrap;
 }
 
+.campo-contexto {
+    width: 100%;
+    min-height: 100px;
+    margin-bottom: 20px;
+    padding: 8px;
+    resize: vertical;
+}
+
 .restriccion-row {
     display: flex;
     align-items: center;

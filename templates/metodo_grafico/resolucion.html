@@ -19,6 +19,9 @@
         <!-- Columna 1: Formulario -->
         <div class="formulario">
             <form method="POST">
+                <h3 class="subtitulo-formulario">Contexto del ejercicio</h3>
+                <textarea class="campo-contexto" name="contexto" placeholder="Describe aquí el contexto o enunciado del ejercicio (opcional).">{{ contexto }}</textarea>
+
                 <h3 class="subtitulo-formulario">Función Objetivo (Z)</h3>
                 <div class="funcion-objetivo">
                     <select name="tipo_opt">
@@ -74,6 +77,10 @@
                 <p><strong>Operación:</strong> {{ "Maximización" if resultados.tipo == 'max' else "Minimización" }}</p>
                 <p><strong>Valor Óptimo (Z):</strong> {{ "%.2f"|format(resultados.optimo.z) }}</p>
                 <p><strong>Punto Óptimo:</strong> ( X1 = {{ "%.2f"|format(resultados.optimo.x) }} , X2 = {{ "%.2f"|format(resultados.optimo.y) }} )</p>
+                {% if resultados.contexto %}
+                <p><strong>Contexto del ejercicio:</strong> {{ resultados.contexto }}</p>
+                {% endif %}
+                <p><strong>Conclusión:</strong> {{ resultados.mensaje }}</p>
                 
                 <h4 class="subtitulo-vertices">Evaluación de Vértices</h4>
                 <table>
