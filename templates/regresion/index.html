@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Regresión lineal con Simplex</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/regresion.css') }}">
+</head>
+<body>
+  <header><div class="topbar"><a href="{{ url_for('index') }}" class="brand">OPTILAB <span>/ USTA</span></a><button id="theme" type="button" aria-label="Cambiar tema">☾ / ☀</button></div><div class="hero"><div><div class="eyebrow">LABORATORIO INTERACTIVO · MÉTODO SIMPLEX</div><h1>Regresión lineal<br><em>con optimización.</em></h1><p>Diseña un conjunto de puntos y observa cómo la recta minimax aparece, se mide y se resuelve paso a paso.</p></div><div class="hero-mark">PL<span>01</span></div></div></header>
+  <main data-api-url="{{ url_for('regresion_bp.calcular') }}">
+    <section class="card">
+      <div class="section-tag">01 / DATOS</div><h2>Marca los puntos</h2>
+      <p class="muted">Haz clic en la cuadrícula o escribe las coordenadas. Se necesitan entre 3 y 12 puntos con distintos valores de X.</p>
+      <svg id="plot" viewBox="0 0 600 600" role="img" aria-label="Cuadrícula para ingresar puntos"></svg>
+      <div class="actions"><button id="sample">Cargar ejemplo</button><button id="clear">Borrar puntos</button><button class="primary" id="solve">Calcular con Simplex</button></div>
+      <div id="error" role="alert"></div>
+    </section>
+    <section class="card">
+      <div class="section-tag">ENTRADA</div><h2>Coordenadas</h2>
+      <div class="actions"><button id="add">Añadir fila</button></div>
+      <div class="scroll"><table><thead><tr><th>#</th><th>X</th><th>Y</th><th></th></tr></thead><tbody id="points"></tbody></table></div>
+      <p class="muted">Cada clic se redondea a 0,1 unidades. Las coordenadas escritas pueden tener más decimales.</p>
+    </section>
+    <section class="card wide" id="result" hidden>
+      <div class="section-tag">02 / RESULTADO</div><h2>La recta óptima</h2>
+      <div id="stats"></div>
+      <p id="formula"></p>
+      <p class="muted">La recta PL minimiza el mayor valor de |ax + b − yᵢ|. Puede quedar por encima o por debajo de varios puntos.</p>
+    </section>
+    <section class="card wide" id="steps" hidden>
+      <div class="section-tag">03 / PROCEDIMIENTO</div><h2>Simplex, iteración por iteración</h2><div class="phase-track"><span>Preparación</span><span>Fase I</span><span>Fase II</span><span>Óptimo</span></div>
+      <p class="muted">Fase I encuentra una base factible con variables artificiales. Fase II minimiza E. LD es el lado derecho; la celda amarilla indica el pivote de la siguiente iteración.</p>
+      <div id="tables"></div>
+    </section>
+  </main>
+<script src="{{ url_for('static', filename='js/regresion.js') }}" defer></script>
+</body>
+</html>

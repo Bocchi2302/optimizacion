@@ -43,9 +43,12 @@ def vista_principal():
     grafica_base64 = None
     resultados = None
     error = None
+    contexto = ''
     
     if request.method == 'POST':
         try:
+            contexto = request.form.get('contexto', '').strip()
+
             # 1. Recoger Función Objetivo
             tipo_opt = request.form.get('tipo_opt', 'max')
             z_x = float(request.form.get('z_x', 0))
@@ -106,7 +109,15 @@ def vista_principal():
                 resultados = {
                     'vertices': evaluaciones,
                     'optimo': optimo,
-                    'tipo': tipo_opt
+                    'tipo': tipo_opt,
+                    'contexto': contexto,
+                    'mensaje': (
+                        f"La maximización de este ejercicio da como resultado "
+                        f"{optimo['x']:.2f} puntos en X1 y {optimo['y']:.2f} puntos en X2."
+                        if tipo_opt == 'max' else
+                        f"La minimización de este ejercicio da como resultado "
+                        f"{optimo['x']:.2f} puntos en X1 y {optimo['y']:.2f} puntos en X2."
+                    )
                 }
                 
                 # 7. Trazado de la gráfica con Matplotlib
@@ -169,4 +180,10 @@ def vista_principal():
         except Exception as e:
             error = f"Ocurrió un error al procesar el cálculo: {str(e)}"
             
-    return render_template('metodo_grafico/resolucion.html', grafica=grafica_base64, resultados=resultados, error=error)
+    return render_template(
+        'metodo_grafico/resolucion.html',
+        grafica=grafica_base64,
+        resultados=resultados,
+        error=error,
+        contexto=contexto
+    )
