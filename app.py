@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, render_template
 from blueprints.grafico_bp import grafico_bp
+from blueprints.vogel_bp import vogel_bp
 
 app = Flask(__name__)
 
@@ -16,4 +17,3 @@ def index():
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
-
