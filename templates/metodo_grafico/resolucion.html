@@ -3,110 +3,600 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método Gráfico</title>
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f7f7f4">
+    <script>
+        /* Aplica el tema antes de pintar (sin parpadeo): lo guardado o, si no hay, el del sistema */
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('tema-optilab'); } catch (e) {}
+            if (t !== 'claro' && t !== 'oscuro') t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'oscuro' : 'claro';
+            document.documentElement.dataset.tema = t;
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/usta-favicon.png') }}">
+    <title>Método Gráfico · OptiLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/grafico.css') }}">
 </head>
 <body>
-    <a class="enlace-inicio" href="{{ url_for('index') }}">⬅ Volver al Inicio</a>
-    
-    <h1 class="titulo-modulo">Módulo: Método Gráfico</h1>
-    
-    {% if error %}
-        <div class="error">{{ error }}</div>
-    {% endif %}
-    
-    <div class="contenedor-principal">
-        <!-- Columna 1: Formulario -->
-        <div class="formulario">
-            <form method="POST">
-                <h3 class="subtitulo-formulario">Contexto del ejercicio</h3>
-                <textarea class="campo-contexto" name="contexto" placeholder="Describe aquí el contexto o enunciado del ejercicio (opcional).">{{ contexto }}</textarea>
-
-                <h3 class="subtitulo-formulario">Función Objetivo (Z)</h3>
-                <div class="funcion-objetivo">
-                    <select name="tipo_opt">
-                        <option value="max">Maximizar</option>
-                        <option value="min">Minimizar</option>
-                    </select>
-                    <span>Z =</span>
-                    <input type="number" name="z_x" step="any" required placeholder="X1"> X1 + 
-                    <input type="number" name="z_y" step="any" required placeholder="X2"> X2
-                </div>
-
-                <h3>Restricciones</h3>
-                <div id="restricciones-container">
-                    <!-- Restricción inicial por defecto -->
-                    <div class="restriccion-row">
-                        <input type="number" name="r_x[]" step="any" required placeholder="X1"> X1 + 
-                        <input type="number" name="r_y[]" step="any" required placeholder="X2"> X2 
-                        <select name="r_op[]">
-                            <option value="<=">≤</option>
-                            <option value=">=">≥</option>
-                        </select>
-                        <input type="number" name="r_c[]" step="any" required placeholder="C">
-                    </div>
-                    <div class="restriccion-row">
-                        <input type="number" name="r_x[]" step="any" required placeholder="X1"> X1 + 
-                        <input type="number" name="r_y[]" step="any" required placeholder="X2"> X2 
-                        <select name="r_op[]">
-                            <option value="<=">≤</option>
-                            <option value=">=">≥</option>
-                        </select>
-                        <input type="number" name="r_c[]" step="any" required placeholder="C">
-                    </div>
-                </div>
-                
-                <button type="button" class="btn-agregar" id="btn-agregar-restriccion">+ Agregar Restricción</button>
-                
-                <!-- Restricciones de no negatividad fijas -->
-                <p class="nota-no-negatividad"><em>Nota: X1 ≥ 0, X2 ≥ 0 se asumen por defecto.</em></p>
-                
-                <button type="submit" class="btn-calcular">Calcular y Graficar</button>
-            </form>
-        </div>
-
-        <!-- Columna 2: Gráfica y Resultados -->
-        {% if grafica %}
-        <div class="grafica-container">
-            <h3 class="subtitulo-seccion">Solución Gráfica</h3>
-            <img class="grafica" src="data:image/png;base64,{{ grafica }}" alt="Gráfica de Optimización">
-            
-            {% if resultados %}
-            <div class="resultados-container">
-                <h3 class="subtitulo-resultados">Resultados de Optimización</h3>
-                <p><strong>Operación:</strong> {{ "Maximización" if resultados.tipo == 'max' else "Minimización" }}</p>
-                <p><strong>Valor Óptimo (Z):</strong> {{ "%.2f"|format(resultados.optimo.z) }}</p>
-                <p><strong>Punto Óptimo:</strong> ( X1 = {{ "%.2f"|format(resultados.optimo.x) }} , X2 = {{ "%.2f"|format(resultados.optimo.y) }} )</p>
-                {% if resultados.contexto %}
-                <p><strong>Contexto del ejercicio:</strong> {{ resultados.contexto }}</p>
-                {% endif %}
-                <p><strong>Conclusión:</strong> {{ resultados.mensaje }}</p>
-                
-                <h4 class="subtitulo-vertices">Evaluación de Vértices</h4>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>X1</th>
-                            <th>X2</th>
-                            <th>Valor Z</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for vertice in resultados.vertices %}
-                        <tr class="{% if vertice == resultados.optimo %}row-optimo{% endif %}">
-                            <td>{{ "%.2f"|format(vertice.x) }}</td>
-                            <td>{{ "%.2f"|format(vertice.y) }}</td>
-                            <td>{{ "%.2f"|format(vertice.z) }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-            {% endif %}
-        </div>
-        {% endif %}
+<div class="fondo-vivo" aria-hidden="true"><i></i><i></i><i></i></div>
+{% macro fila(i, x, y, op, c, n='') %}
+    <div class="fila" data-fila>
+        <span class="fila-nombre">R{{ i }}</span>
+        <label class="campo-num"><span class="sr">Coeficiente de X1</span>
+            <input type="text" inputmode="decimal" name="r_x[]" value="{{ x }}" placeholder="0" required autocomplete="off"></label>
+        <span class="var">X1&nbsp;+</span>
+        <label class="campo-num"><span class="sr">Coeficiente de X2</span>
+            <input type="text" inputmode="decimal" name="r_y[]" value="{{ y }}" placeholder="0" required autocomplete="off"></label>
+        <span class="var">X2</span>
+        <label class="campo-op"><span class="sr">Operador</span>
+            <select name="r_op[]">
+                <option value="&lt;=" {{ 'selected' if op == '<=' }}>≤</option>
+                <option value="&gt;=" {{ 'selected' if op == '>=' }}>≥</option>
+                <option value="=" {{ 'selected' if op == '=' }}>=</option>
+            </select></label>
+        <label class="campo-num"><span class="sr">Lado derecho</span>
+            <input type="text" inputmode="decimal" name="r_c[]" value="{{ c }}" placeholder="0" required autocomplete="off"></label>
+        <button type="button" class="btn-quitar" data-quitar aria-label="Quitar restricción R{{ i }}">×</button>
+        <input type="text" class="rotulo" name="r_n[]" value="{{ n }}" maxlength="80" placeholder="¿Qué limita? (opcional) ej: horas de carpintería" autocomplete="off" aria-label="Nombre de la restricción R{{ i }}">
     </div>
+{% endmacro %}
 
-    <script src="{{ url_for('static', filename='js/grafico.js') }}" defer></script>
+{% macro leyenda(sol, region=False, optimo=False) %}
+    <div class="leyenda" data-leyenda aria-label="Leyenda de colores">
+        {% for r in sol.rectas %}
+        <button type="button" class="ley-chip" data-r="{{ r.nombre }}" style="--c: {{ color_de(loop.index0) }}" aria-pressed="false">
+            <i></i><b>{{ r.nombre }}</b><code>{{ r.texto }}</code>
+        </button>
+        {% endfor %}
+        {% if region and sol.factible %}<span class="ley-fija"><i class="cuadro"></i>Región factible</span>{% endif %}
+        {% if optimo and sol.optimos %}<span class="ley-fija"><i class="estrella">★</i>Óptimo</span>{% endif %}
+    </div>
+    {% if sol.nombres[0] or sol.nombres[1] %}
+    <p class="ejes-nombres"><span>Eje horizontal: <b>X1</b> = {{ sol.nombres[0] or 'X1' }}</span><span>Eje vertical: <b>X2</b> = {{ sol.nombres[1] or 'X2' }}</span></p>
+    {% endif %}
+{% endmacro %}
+
+{% macro paso(id, titulo) %}
+    <section class="paso" id="paso-{{ id }}" data-paso>
+        <header class="paso-cabecera">
+            <span class="paso-num">{{ resultado.numero[id] }}</span>
+            <h3>{{ titulo }}</h3>
+        </header>
+        <div class="paso-cuerpo">{{ caller() }}</div>
+    </section>
+{% endmacro %}
+
+<header class="barra">
+    <a class="volver" href="{{ url_for('index') }}"><span aria-hidden="true">←</span> Inicio</a>
+    <span class="marca"><img class="marca-emblema" src="{{ url_for('static', filename='img/usta-emblema.webp') }}" width="28" height="28" alt="" decoding="async"> OptiLab · Método Gráfico</span>
+    <button type="button" class="btn-tema" id="btn-tema" aria-label="Cambiar a modo oscuro" title="Cambiar tema">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-sol"><circle cx="12" cy="12" r="4.2"/><g class="rayos"><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></g></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-luna"><path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z"/></svg>
+    </button>
+    <span class="progreso-scroll" id="progreso-scroll" aria-hidden="true"></span>
+</header>
+
+<section class="hero{{ ' compacto' if resultado }}">
+    <span class="hero-brillo" aria-hidden="true"></span>
+    <div class="hero-in">
+        <div class="hero-marca" data-in>
+            <span class="usta-tile"><img src="{{ url_for('static', filename='img/usta-logo.webp') }}" width="900" height="782" alt="Universidad Santo Tomás · Villavicencio" decoding="async" fetchpriority="high"></span>
+            <div class="hero-marca-txt">
+                <span class="etq">Proyecto académico</span>
+                <b>Optimización lineal</b>
+            </div>
+        </div>
+        <span class="eyebrow" data-in>Método gráfico · 2 variables</span>
+        <h1 class="hero-titulo" data-palabras>Resuelve problemas de optimización, <em>paso a paso</em></h1>
+        <p class="hero-sub" data-in style="--d: .3s">Escribe o pega un ejercicio. Verás las rectas, la región factible, los vértices y una conclusión redactada con los datos de tu problema.</p>
+    </div>
+</section>
+
+<main class="app">
+    <aside class="panel-form">
+        <form method="POST" id="form-grafico" data-url-extraer="{{ url_for('grafico_bp.extraer_datos') }}" novalidate>
+            <div class="encabezado-form">
+                <h2><svg class="logo-mg" viewBox="0 0 44 36" aria-hidden="true">
+                    <path class="l-eje" d="M5 3V31H41" />
+                    <path class="l-a" d="M5 9L33 31" />
+                    <path class="l-b" d="M5 24L41 10" />
+                    <path class="l-r" d="M5 31V19L21 22L25 26Z" />
+                    <circle class="l-p" cx="25" cy="26" r="2.6" />
+                </svg>Tu ejercicio</h2>
+                <p>Pega el modelo del ejercicio: la app llena el formulario y lo resuelve paso a paso.</p>
+            </div>
+
+            <fieldset class="bloque bloque-enunciado">
+                <legend>1 · Enunciado del ejercicio</legend>
+                <textarea name="contexto" id="contexto" maxlength="8000" rows="6" spellcheck="false" aria-label="Enunciado del ejercicio"
+                    placeholder="Pega aquí el modelo del ejercicio, tal como te lo dieron: en texto o en LaTeX.&#10;&#10;Ej: Maximizar Z = 3x + 5y&#10;sujeto a: x ≤ 4, 2y ≤ 12, 3x + 2y ≤ 18, x, y ≥ 0">{{ form.contexto }}</textarea>
+                <div id="revision" class="revision" hidden aria-live="polite"></div>
+            </fieldset>
+
+            <fieldset class="bloque">
+                <legend>2 · Función objetivo</legend>
+                <div class="seg" role="radiogroup" aria-label="Tipo de optimización">
+                    <input type="radio" name="tipo_opt" id="t-max" value="max" {{ 'checked' if form.tipo_opt != 'min' }}>
+                    <label for="t-max">Maximizar</label>
+                    <input type="radio" name="tipo_opt" id="t-min" value="min" {{ 'checked' if form.tipo_opt == 'min' }}>
+                    <label for="t-min">Minimizar</label>
+                </div>
+                <div class="fila fila-z">
+                    <span class="fila-nombre z">Z&nbsp;=</span>
+                    <label class="campo-num"><span class="sr">Coeficiente de X1 en Z</span>
+                        <input type="text" inputmode="decimal" name="z_x" value="{{ form.z_x }}" placeholder="0" required autocomplete="off"></label>
+                    <span class="var">X1&nbsp;+</span>
+                    <label class="campo-num"><span class="sr">Coeficiente de X2 en Z</span>
+                        <input type="text" inputmode="decimal" name="z_y" value="{{ form.z_y }}" placeholder="0" required autocomplete="off"></label>
+                    <span class="var">X2&nbsp;+</span>
+                    <label class="campo-num campo-k"><span class="sr">Constante de Z (opcional)</span>
+                        <input type="text" inputmode="decimal" name="z_k" value="{{ form.z_k }}" placeholder="0" autocomplete="off"></label>
+                </div>
+                <input type="hidden" name="extraccion" id="extraccion" value="{{ form.extraccion }}">
+                <div class="nombres-vars">
+                    <span class="etq">Nombres para la conclusión <em>(opcional)</em></span>
+                    <label><b>X1 =</b><input type="text" name="nombre_x1" id="nombre_x1" value="{{ form.nombre_x1 }}" maxlength="60" placeholder="ej: mesas" autocomplete="off"></label>
+                    <label><b>X2 =</b><input type="text" name="nombre_x2" id="nombre_x2" value="{{ form.nombre_x2 }}" maxlength="60" placeholder="ej: sillas" autocomplete="off"></label>
+                    <label class="ancho"><b>Z mide</b><input type="text" name="objetivo_nombre" id="objetivo_nombre" value="{{ form.objetivo_nombre }}" maxlength="80" placeholder="ej: la ganancia total" autocomplete="off"></label>
+                </div>
+            </fieldset>
+
+            <fieldset class="bloque">
+                <legend>3 · Restricciones</legend>
+                <div id="restricciones" data-max="12">
+                    {% for f in form.filas %}{{ fila(loop.index, f.x, f.y, f.op, f.c, f.n) }}{% endfor %}
+                </div>
+                <button type="button" class="btn-sec" id="btn-agregar">+ Agregar restricción</button>
+                <p class="nota">X1 ≥ 0 y X2 ≥ 0 se asumen siempre. Puedes escribir decimales (2.5) o fracciones (5/2).</p>
+            </fieldset>
+
+            {% if error %}
+            <div class="alerta" role="alert"><strong>Revisa los datos.</strong> {{ error }}</div>
+            {% endif %}
+
+            <button type="submit" class="btn-principal" id="btn-calcular">
+                <span class="btn-txt">Resolver paso a paso</span><span class="btn-spin" aria-hidden="true"></span>
+            </button>
+        </form>
+
+        <template id="tpl-fila">{{ fila('__N__', '', '', '<=', '') }}</template>
+    </aside>
+
+    <section class="panel-resultado" id="resultado" aria-live="polite">
+    {% if not resultado %}
+        <div class="vacio">
+            <div class="vacio-escena" data-escena>
+            <svg viewBox="0 0 440 300" class="vacio-svg" role="img" aria-label="Animación: tres restricciones dibujan la región factible y una recta de Z se desliza hasta el vértice óptimo">
+                <defs>
+                    <clipPath id="ve-recorte"><rect x="50" y="24" width="372" height="226"/></clipPath>
+                    <pattern id="ve-rayas" width="9" height="9" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="9" stroke="var(--verde)" stroke-width="2" stroke-opacity=".35"/></pattern>
+                </defs>
+                <g class="ve-rejilla">
+                    <path d="M50 250H422M50 202.8H422M50 155.6H422M50 108.4H422M50 61.2H422M50 24H422M108 24V250M166 24V250M224 24V250M282 24V250M340 24V250M398 24V250"/>
+                </g>
+                <g class="ve-ejes"><path d="M50 250H428M50 250V16"/><path d="M428 250l-7-4M428 250l-7 4M50 16l-4 7M50 16l4 7"/>
+                    <text x="424" y="272" text-anchor="end">X1</text><text x="38" y="22" text-anchor="end">X2</text></g>
+                <g clip-path="url(#ve-recorte)">
+                    <polygon class="ve-region" points="50,250 282,250 282,187 166,124 50,124" fill="var(--verde)" fill-opacity=".22"/>
+                    <polygon class="ve-region ve-rayas" points="50,250 282,250 282,187 166,124 50,124" fill="url(#ve-rayas)"/>
+                    <polygon class="ve-borde" pathLength="1" points="50,250 282,250 282,187 166,124 50,124 50,250" fill="none" stroke="var(--verde)" stroke-width="3" stroke-linejoin="round"/>
+                    <line class="ve-l ve-l1" pathLength="1" x1="282" y1="24" x2="282" y2="250" stroke="var(--r0)" stroke-width="3.2" stroke-linecap="round"/>
+                    <line class="ve-l ve-l2" pathLength="1" x1="50" y1="124" x2="422" y2="124" stroke="var(--r1)" stroke-width="3.2" stroke-linecap="round"/>
+                    <line class="ve-l ve-l3" pathLength="1" x1="50" y1="61" x2="398" y2="250" stroke="var(--r2)" stroke-width="3.2" stroke-linecap="round"/>
+                    <g class="ve-iso"><line x1="50" y1="98.8" x2="422" y2="-0.7" stroke="var(--rosa)" stroke-width="2.6" stroke-dasharray="3 7" stroke-linecap="round"/></g>
+                </g>
+                <g class="ve-pill ve-p1"><rect x="262" y="30" width="30" height="18" rx="9" fill="var(--r0)"/><text x="277" y="43" text-anchor="middle">R1</text></g>
+                <g class="ve-pill ve-p2"><rect x="372" y="106" width="30" height="18" rx="9" fill="var(--r1)"/><text x="387" y="119" text-anchor="middle">R2</text></g>
+                <g class="ve-pill ve-p3"><rect x="316" y="200" width="30" height="18" rx="9" fill="var(--r2)"/><text x="331" y="213" text-anchor="middle">R3</text></g>
+                <g class="ve-v ve-v1"><circle cx="50" cy="250" r="5.5"/></g>
+                <g class="ve-v ve-v2"><circle cx="282" cy="250" r="5.5"/></g>
+                <g class="ve-v ve-v3"><circle cx="282" cy="187" r="5.5"/></g>
+                <g class="ve-v ve-v4"><circle cx="50" cy="124" r="5.5"/></g>
+                <g class="ve-opt">
+                    <circle class="ve-onda" cx="166" cy="124" r="12"/><circle class="ve-onda ve-onda2" cx="166" cy="124" r="12"/>
+                    <polygon points="166,108 171.4,119 183.5,120.7 174.7,129.3 176.9,141.4 166,135.6 155.1,141.4 157.3,129.3 148.5,120.7 160.6,119" fill="var(--dorado)" stroke="var(--tinta)" stroke-width="1.6" stroke-linejoin="round"/>
+                    <g class="ve-etq"><rect x="180" y="86" width="74" height="24" rx="12"/><text x="217" y="102" text-anchor="middle">Z = 36</text></g>
+                </g>
+            </svg>
+            </div>
+            <h2>Tu procedimiento aparecerá aquí</h2>
+            <p>Escribe o pega un ejercicio. Vas a ver las rectas, la región factible,
+               los vértices, la evaluación de Z y una conclusión redactada con los datos de tu ejercicio.</p>
+        </div>
+
+    {% else %}
+        {% set sol = resultado.sol %}
+        <h2 class="sr">Resultado y procedimiento paso a paso</h2>
+        <div class="resumen estado-{{ sol.estado }}" {{ 'data-festejo' if sol.estado == 'optimo' }}>
+            <div class="resumen-icono" aria-hidden="true">
+                {% if sol.estado == 'optimo' %}<span class="giro">★</span>{% elif sol.estado == 'no_acotado' %}∞{% else %}∅{% endif %}
+            </div>
+            <div class="resumen-texto">
+                {% if sol.estado == 'optimo' %}
+                    <span class="etq">{{ 'Máximo' if sol.tipo == 'max' else 'Mínimo' }} encontrado</span>
+                    <strong>Z = <span aria-hidden="true" data-contar="{{ '%.10g'|format(sol.optimos[0].z|float) }}" data-final="{{ fmt_exacto(sol.optimos[0].z) }}">{{ fmt_exacto(sol.optimos[0].z) }}</span><span class="sr">{{ fmt_exacto(sol.optimos[0].z) }}</span></strong>
+                    <span>en X1 = {{ fmt_exacto(sol.optimos[0].x) }}, X2 = {{ fmt_exacto(sol.optimos[0].y) }}
+                    {% if sol.multiples %}· <em>hay más soluciones óptimas</em>{% endif %}</span>
+                {% elif sol.estado == 'no_acotado' %}
+                    <span class="etq">Sin {{ 'máximo' if sol.tipo == 'max' else 'mínimo' }}</span>
+                    <strong>Z no tiene límite</strong>
+                    <span>La región es infinita y Z mejora sin parar.</span>
+                {% else %}
+                    <span class="etq">Sin solución</span>
+                    <strong>No existe región factible</strong>
+                    <span>Las restricciones se contradicen entre sí.</span>
+                {% endif %}
+            </div>
+            <div class="resumen-acciones">
+                <button type="button" class="btn-imprimir" id="btn-enlace" title="Copiar un enlace que abre este ejercicio ya resuelto">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M8.5 11.5a3.5 3.5 0 0 0 5 0l2.5-2.5a3.5 3.5 0 0 0-5-5l-1 1M11.5 8.5a3.5 3.5 0 0 0-5 0L4 11a3.5 3.5 0 0 0 5 5l1-1" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+                    <span>Enlace</span>
+                </button>
+                <button type="button" class="btn-imprimir" id="btn-imprimir" title="Imprimir o guardar en PDF">
+                    <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 7V2h10v5M5 14H3V7h14v7h-2M5 11h10v7H5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+                    <span>Imprimir</span>
+                </button>
+            </div>
+            <span class="aviso-flotante" id="aviso-enlace" role="status" aria-live="polite"></span>
+        </div>
+
+        <nav class="indice" aria-label="Pasos del procedimiento">
+            {% set cortos = {'planteamiento': 'Modelo', 'rectas': 'Rectas', 'semiplanos': 'Semiplanos', 'region': 'Región', 'vertices': 'Vértices', 'evaluacion': 'Evaluar Z', 'optimo': 'Óptimo', 'respuesta': 'Conclusión'} %}
+            {% for pid, titulo in resultado.pasos %}
+            <a href="#paso-{{ pid }}" data-nav="{{ pid }}"><b>{{ loop.index }}</b>{{ cortos[pid] }}</a>
+            {% endfor %}
+        </nav>
+
+        <div class="pasos" id="pasos">
+        <i class="riel-progreso" aria-hidden="true"></i>
+        {# ── 1. Planteamiento ───────────────────────────────────────── #}
+        {% call paso('planteamiento', 'Plantear el modelo') %}
+            {% if sol.contexto %}
+            <blockquote class="enunciado"><span class="etq">Enunciado</span>{{ sol.contexto }}</blockquote>
+            {% endif %}
+            <p>Primero traducimos el ejercicio a un <strong>modelo matemático</strong>: una función que queremos
+               {{ 'hacer lo más grande posible' if sol.tipo == 'max' else 'hacer lo más pequeña posible' }}
+               y las condiciones que limitan las decisiones.</p>
+            <div class="modelo">
+                <div class="modelo-obj">
+                    <span class="etq">Función objetivo</span>
+                    <code>{{ 'Maximizar' if sol.tipo == 'max' else 'Minimizar' }} &nbsp; Z = {{ expresion(sol.zx, sol.zy, sol.zk) }}</code>
+                </div>
+                <div class="modelo-res">
+                    <span class="etq">Sujeto a</span>
+                    <ul>
+                    {% for r in sol.usuario %}
+                        <li><span class="nombre-r" style="--c: {{ color_de(sol.rectas.index(r)) if r in sol.rectas else '#94a3b8' }}">{{ r.nombre }}</span><code>{{ r.texto }}</code>{% if r.rotulo %}<span class="rotulo-txt">{{ r.rotulo }}</span>{% endif %}</li>
+                    {% endfor %}
+                        <li><span class="nombre-r neutro">No negatividad</span><code>X1 ≥ 0, &nbsp;X2 ≥ 0</code></li>
+                    </ul>
+                </div>
+            </div>
+            {% if sol.nombres[0] or sol.nombres[1] or sol.objetivo_nombre %}
+            <p class="nota-paso variables-nombre"><span class="etq">Variables de decisión</span>
+                <code>X1 = {{ sol.nombres[0] or '—' }}</code> <code>X2 = {{ sol.nombres[1] or '—' }}</code>
+                {% if sol.objetivo_nombre %}<code>Z = {{ sol.objetivo_nombre }}</code>{% endif %}</p>
+            {% endif %}
+            <p class="nota-paso">X1 y X2 son las <em>variables de decisión</em>. Como el problema tiene solo dos,
+               podemos dibujarlo en un plano: X1 en el eje horizontal y X2 en el vertical.</p>
+            {% if sol.triviales %}
+            <div class="aviso">{% for r in sol.triviales %}{{ r.nombre }} ({{ r.texto }}) no depende de X1 ni de X2, así que no se dibuja:
+                {{ 'se cumple siempre.' if r.cumple(0, 0) else 'es imposible de cumplir.' }} {% endfor %}</div>
+            {% endif %}
+        {% endcall %}
+
+        {# ── 2. Rectas ──────────────────────────────────────────────── #}
+        {% call paso('rectas', 'Convertir las restricciones en rectas') %}
+            <p>Cada desigualdad está limitada por una recta. Para dibujarla basta con dos puntos, así que
+               buscamos dónde corta a cada eje: con el <strong>eje X1</strong> hacemos X2 = 0 y despejamos X1;
+               con el <strong>eje X2</strong> hacemos X1 = 0 y despejamos X2.</p>
+            {% if resultado.info_rectas %}
+            <div class="tabla-wrap"><table class="tabla">
+                <thead><tr><th>Restricción</th><th>Recta (cambiamos {{ '≤ / ≥' }} por =)</th><th>Corte con X1</th><th>Corte con X2</th></tr></thead>
+                <tbody>
+                {% for i in resultado.info_rectas %}
+                    <tr data-r="{{ i.recta.nombre }}">
+                        <td><span class="nombre-r" style="--c: {{ i.color }}">{{ i.recta.nombre }}</span></td>
+                        <td><code>{{ i.recta.ecuacion }}</code></td>
+                        <td>{% if i.corte_x1 %}X2 = 0 → X1 = {{ fmt(i.recta.c) }}/{{ fmt(i.recta.a) }} = <b>{{ fmt(i.corte_x1[0]) }}</b><br><small>punto ({{ fmt(i.corte_x1[0]) }}, 0)</small>
+                            {% else %}<span class="tenue">No corta: es paralela a X1</span>{% endif %}</td>
+                        <td>{% if i.corte_x2 %}X1 = 0 → X2 = {{ fmt(i.recta.c) }}/{{ fmt(i.recta.b) }} = <b>{{ fmt(i.corte_x2[1]) }}</b><br><small>punto (0, {{ fmt(i.corte_x2[1]) }})</small>
+                            {% else %}<span class="tenue">No corta: es paralela a X2</span>{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            <figure class="figura">{{ resultado.figuras.rectas }}{{ leyenda(sol) }}
+                <figcaption>Las rectas de las restricciones sobre el plano (X1 ≥ 0, X2 ≥ 0 son los ejes). <span class="txt-mouse">Pasa el mouse por un color para resaltarlo.</span><span class="txt-tactil">Toca un color para resaltarlo.</span></figcaption></figure>
+            {% else %}
+            <p class="aviso">No hay rectas que dibujar: solo se aplican X1 ≥ 0 y X2 ≥ 0.</p>
+            {% endif %}
+        {% endcall %}
+
+        {# ── 3. Semiplanos ──────────────────────────────────────────── #}
+        {% call paso('semiplanos', 'Decidir hacia qué lado es factible cada una') %}
+            <p>Una recta divide el plano en dos mitades y solo una cumple la desigualdad. Para saber cuál,
+               <strong>probamos un punto</strong> (el origen, o uno cercano si la recta pasa por él): si lo cumple,
+               la zona buena es su lado; si no, es el contrario. Cada restricción tiene <strong>su propio color</strong>
+               y su propio mapa: la zona rayada es donde sí se cumple.</p>
+            {% if resultado.info_rectas %}
+            <div class="semi-grid">
+                {% for i in resultado.info_rectas %}
+                <article class="semi-card" data-r="{{ i.recta.nombre }}" style="--c: {{ i.color }}">
+                    <header>
+                        <span class="nombre-r">{{ i.recta.nombre }}</span>
+                        <code>{{ i.recta.texto }}</code>
+                    </header>
+                    <div class="semi-fig">{{ i.figura }}</div>
+                    <ol class="semi-pasos">
+                        <li>Dibujamos la recta <code>{{ i.recta.ecuacion }}</code>.</li>
+                        {% if i.recta.op == '=' %}
+                        <li>Es una igualdad: <b>solo sirven los puntos que están sobre la recta</b>.</li>
+                        {% else %}
+                        <li>Probamos {{ i.prueba }}: <code>{{ fmt(i.valor_prueba) }} {{ SIMBOLO[i.recta.op] }} {{ fmt(i.recta.c) }}</code>
+                            → <span class="{{ 'ok' if i.prueba_cumple else 'mal' }}">{{ 'sí cumple' if i.prueba_cumple else 'no cumple' }}</span>.</li>
+                        <li>Pintamos el lado {{ 'que contiene' if i.prueba_cumple else 'opuesto a' }} {{ i.prueba }}
+                            (las flechas apuntan hacia allá).</li>
+                        {% endif %}
+                    </ol>
+                </article>
+                {% endfor %}
+            </div>
+            <p class="nota-paso">Ahora juntamos todos los mapas en uno solo. La región factible será la parte donde <em>todos</em> los colores se cumplen a la vez.</p>
+            <figure class="figura">{{ resultado.figuras.semiplanos }}{{ leyenda(sol) }}
+                <figcaption>Cada flecha apunta hacia el lado que cumple su restricción. <span class="txt-mouse">Pasa el mouse por un color para aislarlo.</span><span class="txt-tactil">Toca un color para aislarlo.</span></figcaption></figure>
+            {% else %}
+            <p class="aviso">Sin rectas que evaluar.</p>
+            {% endif %}
+        {% endcall %}
+
+        {# ── 4. Región factible ─────────────────────────────────────── #}
+        {% call paso('region', 'Marcar la región factible') %}
+            {% if sol.contradiccion %}
+            <p class="aviso mal-aviso">{{ sol.contradiccion.nombre }} ({{ sol.contradiccion.texto }}) no depende de las variables y es falsa: <b>ningún punto puede cumplirla</b>.</p>
+            {% else %}
+            <p>La <strong>región factible</strong> es la zona donde se cumplen <em>todas</em> las restricciones a la vez,
+               es decir, donde se traslapan todos los lados buenos del paso anterior (y X1, X2 ≥ 0).</p>
+            {% endif %}
+            {% if sol.factible %}
+            <div class="dato-region">
+                <span class="insignia ok-b">Región {{ 'acotada' if sol.acotada else 'no acotada' }}</span>
+                <span>Forma: <b>{{ resultado.forma_region }}</b></span>
+            </div>
+            {% if not sol.acotada %}
+            <p class="nota-paso">«No acotada» significa que la región se extiende sin fin en alguna dirección; la gráfica solo muestra una parte.</p>
+            {% endif %}
+            {% else %}
+            <p class="aviso mal-aviso"><b>La región factible está vacía.</b> Entre todos los puntos del plano no hay uno que cumpla todas las restricciones.</p>
+            {% endif %}
+            <figure class="figura">{{ resultado.figuras.region }}{{ leyenda(sol, region=True) }}
+                <figcaption>{{ 'La zona verde es la región factible.' if sol.factible else 'No hay zona verde: las restricciones no se traslapan.' }}</figcaption></figure>
+        {% endcall %}
+
+        {% if sol.factible %}
+        {# ── 5. Vértices ────────────────────────────────────────────── #}
+        {% call paso('vertices', 'Hallar los vértices de la región') %}
+            <p>El óptimo de un problema lineal siempre se alcanza en un <strong>vértice</strong> (esquina) de la región factible.
+               Los vértices son puntos donde se cruzan dos rectas, así que resolvemos cada par de rectas
+               (incluidos los ejes) y nos quedamos con las intersecciones que cumplen <em>todas</em> las restricciones.</p>
+            <div class="formula">
+                Para a₁X1 + b₁X2 = c₁ y a₂X1 + b₂X2 = c₂ &nbsp;→&nbsp; det = a₁b₂ − a₂b₁ &nbsp;·&nbsp;
+                X1 = (c₁b₂ − c₂b₁) / det &nbsp;·&nbsp; X2 = (a₁c₂ − a₂c₁) / det
+            </div>
+            <details class="detalle" open>
+                <summary>Ver las {{ sol.candidatos|length }} intersecciones calculadas
+                    <span class="insignia">{{ sol.vertices|length }} factible{{ 's' if sol.vertices|length != 1 }}</span></summary>
+                <label class="filtro-cand"><input type="checkbox" data-solo-factibles{{ ' checked' if sol.candidatos|length > 20 }}> Mostrar solo las intersecciones factibles</label>
+                <div class="tabla-wrap"><table class="tabla tabla-cand{{ ' solo-factibles' if sol.candidatos|length > 20 }}">
+                    <thead><tr><th>Par de rectas</th><th>det</th><th>Punto (X1, X2)</th><th>¿Es factible?</th></tr></thead>
+                    <tbody>
+                    {% for c in sol.candidatos %}
+                        <tr class="{{ 'fila-ok' if c.factible else 'fila-no' }}"{% if c.factible %} data-p="{{ clave_punto(c.x, c.y) }}"{% endif %}>
+                            <td>{{ c.r1.nombre }} ∩ {{ c.r2.nombre }}</td>
+                            <td>{{ fmt(c.det) }}</td>
+                            <td>({{ fmt(c.x) }}, {{ fmt(c.y) }})</td>
+                            <td>{% if c.factible %}<span class="ok">✔ Sí, cumple todas</span>
+                                {% else %}<span class="mal">✘ Viola {{ c.violadas|join(', ') }}</span>{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table></div>
+            </details>
+            {% if sol.paralelas %}
+            <p class="nota-paso">No se cruzan (rectas paralelas): {% for a, b in sol.paralelas %}{{ a.nombre }} y {{ b.nombre }}{{ ', ' if not loop.last }}{% endfor %}.</p>
+            {% endif %}
+            <div class="chips-vert">
+                <span class="etq">Vértices factibles</span>
+                {% for e in sol.vertices %}<span class="chip-v" data-p="{{ e.clave }}">({{ fmt(e.x) }}, {{ fmt(e.y) }})</span>{% endfor %}
+            </div>
+            <figure class="figura">{{ resultado.figuras.vertices }}{{ leyenda(sol, region=True) }}
+                <figcaption>Los puntos marcados son los vértices factibles. <span class="txt-mouse">Pasa el mouse por una fila o por un vértice para ubicarlo.</span><span class="txt-tactil">Toca una fila o un vértice para ubicarlo.</span></figcaption></figure>
+        {% endcall %}
+
+        {# ── 6. Evaluación ──────────────────────────────────────────── #}
+        {% call paso('evaluacion', 'Evaluar Z en cada vértice') %}
+            <p>Sustituimos las coordenadas de cada vértice en la función objetivo
+               <code>Z = {{ expresion(sol.zx, sol.zy, sol.zk) }}</code> y comparamos los resultados.</p>
+            <div class="tabla-wrap"><table class="tabla">
+                <thead><tr><th>Vértice</th><th>Cálculo</th><th>Valor de Z</th></tr></thead>
+                <tbody>
+                {% for e in sol.vertices %}
+                    <tr class="{{ 'fila-optimo' if e.optimo }}" data-p="{{ e.clave }}">
+                        <td>({{ fmt(e.x) }}, {{ fmt(e.y) }})</td>
+                        <td><code>{{ e.calculo }}</code></td>
+                        <td><b>{{ fmt(e.z) }}</b>{% if e.optimo %} <span class="insignia opt-b">★ {{ 'mayor' if sol.tipo == 'max' else 'menor' }}</span>{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+            <p class="nota-paso"><span class="txt-mouse">Pasa el mouse por</span><span class="txt-tactil">Toca</span> una fila de la tabla y verás dónde está ese vértice en las gráficas de los pasos {{ resultado.numero.vertices }} y {{ resultado.numero.optimo }}.</p>
+        {% endcall %}
+
+        {# ── 7. Óptimo ──────────────────────────────────────────────── #}
+        {% call paso('optimo', 'Elegir el valor óptimo' if sol.estado == 'optimo' else 'Revisar si Z tiene límite') %}
+            {% if sol.estado == 'optimo' %}
+                <p>Como queremos <strong>{{ 'maximizar' if sol.tipo == 'max' else 'minimizar' }}</strong>, escogemos el vértice con el
+                   <strong>{{ 'mayor' if sol.tipo == 'max' else 'menor' }}</strong> valor de Z:
+                   <b>Z = {{ fmt_exacto(sol.optimos[0].z) }}</b>
+                   en {% for e in sol.optimos %}({{ fmt(e.x) }}, {{ fmt(e.y) }}){{ ' y ' if not loop.last }}{% endfor %}.</p>
+                <p class="nota-paso">Otra forma de verlo: la recta punteada roja es <code>{{ expresion(sol.zx, sol.zy) }} = {{ 'Z − ' ~ fmt(sol.zk) if sol.zk > 0 else 'Z + ' ~ fmt(-sol.zk) if sol.zk < 0 else 'Z' }}</code>.
+                   Al desplazarla en el sentido de la flecha, Z {{ 'crece' if sol.tipo == 'max' else 'disminuye' }};
+                   el último punto de la región que toca es el óptimo.</p>
+                {% if sol.multiples %}
+                <div class="aviso">
+                    <b>Hay infinitas soluciones óptimas.</b>
+                    {% if sol.optimos|length > 1 %}La recta de Z es paralela a una arista de la región y toca a dos vértices con el mismo valor
+                    ({% for e in sol.optimos %}({{ fmt(e.x) }}, {{ fmt(e.y) }}){{ ', ' if not loop.last }}{% endfor %}):
+                    todos los puntos del segmento que los une también dan Z = {{ fmt(sol.optimos[0].z) }}.
+                    {% else %}Desde el vértice óptimo la región sigue indefinidamente en una dirección donde Z no cambia: todos esos puntos también son óptimos.{% endif %}
+                </div>
+                {% endif %}
+            {% else %}
+                {% set d = sol.rayo_mejora %}
+                <p class="aviso mal-aviso"><b>No existe {{ 'máximo' if sol.tipo == 'max' else 'mínimo' }}.</b>
+                   La región no está acotada y, al avanzar desde cualquier punto en la dirección ({{ fmt(d[0]) }}, {{ fmt(d[1]) }}),
+                   siempre se cumplen las restricciones y Z {{ 'aumenta' if sol.tipo == 'max' else 'disminuye' }}:
+                   Z = {{ expresion(sol.zx, sol.zy, sol.zk) }} cambia {{ fmt(sol.zx * d[0] + sol.zy * d[1]) }} por cada unidad avanzada.
+                   Por eso los vértices de la tabla no son un {{ 'máximo' if sol.tipo == 'max' else 'mínimo' }} real.</p>
+                <p class="nota-paso">Suele indicar que al modelo le falta una restricción (un límite de recursos, por ejemplo).</p>
+            {% endif %}
+            <figure class="figura" data-figura-z>{{ resultado.figuras.optimo }}{{ leyenda(sol, region=True, optimo=True) }}
+                {% if sol.zx != 0 or sol.zy != 0 %}
+                <div class="z-control" data-z-control>
+                    <div class="z-cab">
+                        <span class="etq">Prueba tú mismo: mueve la recta de Z</span>
+                        <span class="z-botones">
+                            <button type="button" class="chip" data-z-animar aria-label="Animar: la recta de Z recorre la región">▶ Animar</button>
+                            <button type="button" class="chip" data-z-optimo>Ir al óptimo</button>
+                        </span>
+                    </div>
+                    <input type="range" class="z-rango" min="0" max="1" step="any" value="0" aria-label="Valor de Z">
+                    <output class="z-lectura" aria-live="polite"><span class="z-valor">Z = …</span><span class="z-estado"></span></output>
+                </div>
+                {% endif %}
+                <figcaption>{{ '★ óptimo · líneas punteadas: valores de Z en cada vértice' if sol.estado == 'optimo' else 'Líneas punteadas: valores de Z en cada vértice; la flecha muestra hacia dónde mejora Z.' }}</figcaption></figure>
+        {% endcall %}
+        {% endif %}
+
+        {# ── Conclusión ─────────────────────────────────────────────── #}
+        {% call paso('respuesta', 'Conclusión') %}
+            {% set c = resultado.conclusion %}
+            <div class="concl concl-{{ c.estado }}">
+                <p class="concl-titular">{{ c.titular }}</p>
+                <div class="concl-respuesta">
+                    <span class="etq">Respuesta</span>
+                    <p>{{ c.respuesta_final }}</p>
+                </div>
+
+                {% if c.estado == 'optimo' %}
+                <div class="decision-grid">
+                    {% for d in c.decision %}
+                    <div class="decision-card {{ 'cero' if d.cero }}">
+                        <span class="etq">{{ d.etiqueta }}</span>
+                        <b class="decision-num" aria-hidden="true" data-contar="{{ d.numero }}" data-final="{{ d.valor }}">{{ d.valor }}</b>
+                        <span class="sr">{{ d.valor }}</span>
+                        <span class="decision-nombre">{{ d.nombre if d.con_nombre else 'unidades' }}</span>
+                    </div>
+                    {% endfor %}
+                    <div class="decision-card objetivo">
+                        <span class="etq">{{ c.objetivo.etiqueta }} · {{ c.objetivo.extremo }}</span>
+                        <b class="decision-num" aria-hidden="true" data-contar="{{ c.objetivo.numero }}" data-final="{{ c.objetivo.valor }}">{{ c.objetivo.valor }}</b>
+                        <span class="sr">{{ c.objetivo.valor }}</span>
+                        <span class="decision-nombre">Z = {{ sol.optimos[0].calculo }}</span>
+                    </div>
+                </div>
+
+                {% if c.comparacion %}
+                <div class="comparacion">
+                    <span class="etq">¿Por qué este y no otro?</span>
+                    {% for f in c.comparacion %}
+                    <div class="cmp-fila {{ 'es-optimo' if f.optimo }}{{ ' negativo' if f.negativo }}" data-p="{{ f.punto|replace('(', '')|replace(')', '')|replace(' ', '') }}">
+                        <span class="cmp-punto">{{ f.punto }}</span>
+                        <span class="cmp-barra"><i style="--w: {{ '%.1f'|format(f.ancho) }}%"></i></span>
+                        <b class="cmp-z">Z = {{ f.z }}{% if f.optimo %} <span class="cmp-estrella" aria-hidden="true">★</span>{% endif %}</b>
+                    </div>
+                    {% endfor %}
+                    <small>{{ c.frase_comparacion }}</small>
+                </div>
+                {% endif %}
+
+                {% if c.recursos %}
+                <div class="recursos">
+                    <span class="etq">Uso de cada restricción en el óptimo</span>
+                    {% for f in c.recursos %}
+                    <div class="recurso est-{{ f.estado }}" data-r="{{ f.nombre }}" style="--c: {{ color_de(f.indice) }}">
+                        <div class="recurso-cab">
+                            <span class="nombre-r">{{ f.nombre }}</span>
+                            <b>{{ f.rotulo or f.texto }}</b>
+                            {% if f.rotulo %}<code>{{ f.texto }}</code>{% endif %}
+                            <span class="recurso-estado">{{ f.mensaje }}</span>
+                        </div>
+                        {% if f.ancho is not none %}
+                        <div class="barra-uso {{ 'sobre' if f.exceso }}" role="img" aria-label="{{ f.detalle }}"><i style="--w: {{ '%.1f'|format(f.ancho) }}%"></i></div>
+                        {% endif %}
+                        <small>{{ f.calculo }} · {{ f.detalle }}</small>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% endif %}
+
+                <div class="concl-texto">
+                    {% for p in c.parrafos %}<p>{{ p }}</p>{% endfor %}
+                </div>
+
+                {% if c.sensibilidad %}
+                <div class="concl-caja sens">
+                    <span class="etq">¿Y si los límites cambian?</span>
+                    <ul>{% for t in c.sensibilidad %}<li>{{ t }}</li>{% endfor %}</ul>
+                    <small>Vale mientras sigan siendo las mismas restricciones las que definen el óptimo (a esto se le llama precio sombra).</small>
+                </div>
+                {% endif %}
+                {% if c.recomendaciones %}
+                <div class="concl-caja recom">
+                    <span class="etq">Recomendación</span>
+                    <ul>{% for t in c.recomendaciones %}<li>{{ t }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+                {% if c.cuidados %}
+                <div class="concl-caja cuidado">
+                    <span class="etq">Ten en cuenta</span>
+                    <ul>{% for t in c.cuidados %}<li>{{ t }}</li>{% endfor %}</ul>
+                </div>
+                {% endif %}
+
+                {% if c.verificacion %}<p class="verificacion">{{ c.verificacion }}</p>{% endif %}
+
+                <div class="concl-acciones">
+                    <button type="button" class="chip" id="btn-copiar" data-texto="{{ c.texto_plano }}">Copiar conclusión</button>
+                    <span class="copiado" id="aviso-copiado" aria-live="polite"></span>
+                </div>
+            </div>
+        {% endcall %}
+        </div>
+
+        <section class="cg" data-in>
+            <canvas class="cg-globe" aria-hidden="true"></canvas>
+            <div class="cg-copy">
+                <span class="eyebrow">¿Listo?</span>
+                <h2 class="cg-titulo">Otro ejercicio,<br>otra región factible</h2>
+                <a class="btn-cg" id="btn-otro" href="{{ url_for('grafico_bp.vista_principal') }}?nuevo=1">Resolver otro ejercicio <span aria-hidden="true">→</span></a>
+            </div>
+        </section>
+    {% endif %}
+    </section>
+</main>
+
+<footer class="pie">
+    <div class="pie-in">
+        <span class="usta-tile pequeno"><img src="{{ url_for('static', filename='img/usta-logo.webp') }}" width="900" height="782" alt="Universidad Santo Tomás · Villavicencio" loading="lazy" decoding="async"></span>
+        <p><b>Universidad Santo Tomás · Villavicencio</b><br>Proyecto académico de Optimización Lineal. Herramienta educativa para aprender el método gráfico paso a paso.</p>
+    </div>
+</footer>
+<button type="button" class="btn-arriba" id="btn-arriba" aria-label="Volver arriba">↑</button>
+<script src="{{ url_for('static', filename='js/grafico.js') }}" defer></script>
 </body>
 </html>
