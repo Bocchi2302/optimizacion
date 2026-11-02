@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Método Simplex</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/simplex.css') }}">
+</head>
+<body>
+  <header>
+    <div class="topbar"><a href="{{ url_for('index') }}" class="brand">OPTILAB <span>/ USTA</span></a><button id="theme" type="button" aria-label="Cambiar tema">☾ / ☀</button></div>
+    <div class="hero">
+      <div>
+        <div class="eyebrow">LABORATORIO INTERACTIVO · MÉTODO SIMPLEX</div>
+        <h1>Simplex normal<br><em>paso a paso.</em></h1>
+        <p>Define el modelo, cuéntanos el contexto y obtén la solución óptima, el análisis de sensibilidad y una interpretación en lenguaje claro.</p>
+      </div>
+      <div class="hero-mark">SX<span>02</span></div>
+    </div>
+  </header>
+  <main data-api-url="{{ url_for('simplex_bp.calcular') }}" data-max-vars="{{ max_variables }}" data-max-res="{{ max_restricciones }}">
+    <section class="card wide">
+      <div class="section-tag">01 / MODELO</div><h2>Define el problema</h2>
+      <p class="muted">Variables con x ≥ 0 y restricciones de tipo ≤ con lado derecho ≥ 0. Para restricciones ≥ o = usa el Simplex de dos fases. Acepta enteros, decimales y fracciones (1/3).</p>
+      <div class="actions controls">
+        <label>Objetivo <select id="sentido"><option value="max">Maximizar</option><option value="min">Minimizar</option></select></label>
+        <label>Unidad de Z <input id="unidad-z" type="text" placeholder="pesos, USD…" class="text"></label>
+        <button id="add-var" type="button">+ Variable</button>
+        <button id="add-res" type="button">+ Restricción</button>
+      </div>
+      <div class="scroll"><table id="grid" class="grid"></table></div>
+      <pre id="preview" class="preview" aria-label="Vista del modelo"></pre>
+    </section>
+    <section class="card wide">
+      <div class="section-tag">02 / CONTEXTO</div><h2>Cuéntanos de qué trata</h2>
+      <textarea id="contexto" rows="4" placeholder="Describe el problema con tus palabras: qué se produce, qué recursos hay, qué se quiere lograr…"></textarea>
+      <div class="actions"><button id="sample" type="button">Cargar ejemplo</button><button class="primary" id="solve" type="button">Calcular con Simplex</button></div>
+      <div id="error" role="alert"></div>
+    </section>
+    <section class="card wide" id="result" hidden>
+      <div class="section-tag">03 / RESULTADO</div><h2>Solución óptima</h2>
+      <div id="stats"></div>
+    </section>
+    <section class="card wide" id="interp" hidden>
+      <div class="section-tag">04 / INTERPRETACIÓN</div><h2>¿Qué significa?</h2>
+      <div id="interp-body"></div>
+    </section>
+    <section class="card wide" id="sens" hidden>
+      <div class="section-tag">05 / SENSIBILIDAD</div><h2>¿Qué tan estable es la solución?</h2>
+      <h3>Precios sombra y rango del lado derecho</h3>
+      <div class="scroll"><table id="t-res"></table></div>
+      <h3>Rangos de los coeficientes de Z</h3>
+      <div class="scroll"><table id="t-var"></table></div>
+    </section>
+    <section class="card wide" id="steps" hidden>
+      <div class="section-tag">06 / PROCEDIMIENTO</div><h2>Simplex, iteración por iteración</h2>
+      <p class="muted" id="modelo"></p>
+      <p class="muted">LD es el lado derecho; la celda amarilla indica el pivote de la siguiente iteración. La última fila es Z (zⱼ − cⱼ).</p>
+      <div id="tables"></div>
+    </section>
+  </main>
+<script src="{{ url_for('static', filename='js/simplex.js') }}" defer></script>
+</body>
+</html>
