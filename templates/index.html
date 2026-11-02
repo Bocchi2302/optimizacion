@@ -31,16 +31,27 @@
         .btn-lanzador:hover {
             background-color: #0056b3;
         }
+        .modulos {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 16px;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Bienvenido al Optimizador Lineal</h1>
         <p>Seleccione el módulo que desea utilizar:</p>
-        <!-- Redirección al Blueprint del Método Gráfico -->
+        <nav class="modulos" aria-label="Métodos disponibles">
         <a href="{{ url_for('grafico_bp.vista_principal') }}" class="btn-lanzador">
             Ingresar al Método Gráfico
         </a>
+        <a href="{{ url_for('mod_bp.vista_principal') }}" class="btn-lanzador">
+            Ingresar al Método MOD
+        </a>
+        </nav>
     </div>
 </body>
 </html>

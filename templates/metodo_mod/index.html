@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método MOD · Software de Optimización</title>
+    <link rel="stylesheet" href="{{ url_for('mod_bp.static', filename='mod.css') }}">
+    <script defer src="{{ url_for('mod_bp.static', filename='mod.js') }}"></script>
+</head>
+<body>
+    <header>
+        <a class="brand" href="{{ url_for('index') }}">Optimizador <span>/ Método MOD</span></a>
+        <nav aria-label="Navegación de métodos">
+            <a href="{{ url_for('index') }}">Todos los métodos</a>
+            <a href="{{ url_for('grafico_bp.vista_principal') }}">Método gráfico</a>
+            <a href="{{ url_for('mod_bp.vista_principal') }}" aria-current="page">MOD</a>
+        </nav>
+    </header>
+    <main>
+        <section class="intro">
+            <p class="eyebrow">MATEMÁTICAS · OPERACIÓN MÓDULO</p>
+            <h1>Lo que sobra<br>también cuenta<span>.</span></h1>
+            <p>Calcula el residuo de una división entre enteros y descubre cómo se obtiene, paso a paso.</p>
+        </section>
+        <div class="workspace">
+            <section class="card" aria-labelledby="calculator-title">
+                <p class="eyebrow">01 / INGRESA TUS DATOS</p>
+                <h2 id="calculator-title">Calculadora MOD</h2>
+                <form id="mod-form" data-endpoint="{{ url_for('mod_bp.calcular') }}">
+                    <div class="operands">
+                        <div><label for="dividendo">Dividendo (a)</label><input id="dividendo" name="dividendo" type="text" value="10" maxlength="201" required pattern="[+\-]?[0-9]+" aria-describedby="input-help" autocomplete="off"></div>
+                        <span class="operator" aria-hidden="true">MOD</span>
+                        <div><label for="divisor">Divisor (b)</label><input id="divisor" name="divisor" type="text" value="3" maxlength="201" required pattern="[+\-]?[0-9]+" aria-describedby="input-help" autocomplete="off"></div>
+                    </div>
+                    <p id="input-help" class="hint">Solo enteros, hasta 200 dígitos. El divisor debe ser distinto de cero.</p>
+                    <div class="actions"><button type="submit" id="calculate">Calcular residuo <span aria-hidden="true">→</span></button><button type="reset" class="secondary">Limpiar</button></div>
+                    <p id="error" class="error" role="alert" hidden></p>
+                    <p id="status" class="hint" role="status"></p>
+                </form>
+                <div class="examples"><span>Prueba un ejemplo</span><button type="button" data-a="10" data-b="3">10 MOD 3</button><button type="button" data-a="20" data-b="5">20 MOD 5</button><button type="button" data-a="17" data-b="2">17 MOD 2</button><button type="button" data-a="-10" data-b="3">−10 MOD 3</button></div>
+            </section>
+            <section class="card result-card" aria-labelledby="result-title">
+                <p class="eyebrow">02 / ENTIENDE EL RESULTADO</p>
+                <h2 id="result-title">El residuo</h2>
+                <p id="empty-result" class="placeholder">Ingresa dos enteros y pulsa «Calcular residuo».</p>
+                <div id="result" hidden>
+                    <p id="expression" class="hint"></p>
+                    <p id="remainder" class="remainder"></p>
+                    <p id="equation" class="equation"></p>
+                    <ol class="steps"><li id="step-quotient"></li><li id="step-product"></li><li id="step-remainder"></li></ol>
+                    <div class="facts"><p id="divisibility"></p><p id="parity"></p></div>
+                </div>
+            </section>
+        </div>
+        <section class="explanation" aria-labelledby="about-title">
+            <div><p class="eyebrow">LA REGLA</p><h2 id="about-title">a = b × q + r</h2></div>
+            <div><p><strong>a</strong> es el dividendo, <strong>b</strong> el divisor, <strong>q</strong> el cociente entero y <strong>r</strong> el residuo.</p><p>Usamos módulo euclídeo: <strong>0 ≤ r &lt; |b|</strong>. El residuo siempre es no negativo, incluso con entradas negativas. Por ejemplo, −10 = 3 × (−4) + 2. Esta convención puede diferir del operador % de algunos lenguajes.</p><p>Un residuo 0 indica divisibilidad exacta. Para comprobar paridad se calcula a MOD 2, independientemente del divisor elegido.</p></div>
+        </section>
+        <noscript><p class="error">Activa JavaScript para utilizar la calculadora.</p></noscript>
+    </main>
+    <footer>Software de Optimización · Método MOD</footer>
+</body>
+</html>
