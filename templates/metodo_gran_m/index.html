@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Método de la Gran M</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/gran_m.css') }}">
+</head>
+<body>
+    <header class="cabecera">
+        <a href="{{ url_for('index') }}" class="volver">⬅ Volver al Inicio</a>
+        <h1>Módulo: Método de la Gran M</h1>
+    </header>
+
+    <main class="contenedor">
+
+        <!-- 1. Teoría breve -->
+        <section class="tarjeta" id="teoria">
+            <h2>Método de la Gran M</h2>
+            <p>
+                Se usa cuando alguna restricción es <strong>≥</strong> o <strong>=</strong>, porque el origen
+                no sirve como solución básica inicial. Se agregan variables artificiales $A_i$ y se penalizan con $M$.
+            </p>
+            <ol class="pasos-teoria">
+                <li><strong>Estandarizar:</strong> ≤ suma $+S_i$; ≥ resta $-S_i$ y suma $+A_i$; = suma $+A_i$.</li>
+                <li><strong>Penalizar:</strong> en minimización se suma $M A_i$ a Z; en maximización se resta.</li>
+                <li><strong>Eliminar</strong> las básicas de la fila Z.</li>
+                <li><strong>Pivotear:</strong> entra la variable que mejora Z y sale la de menor razón RHS / coeficiente.</li>
+                <li><strong>Repetir</strong> hasta que la fila Z no tenga coeficientes que mejoren Z.</li>
+                <li><strong>Verificar</strong> que las artificiales valgan 0.</li>
+            </ol>
+        </section>
+
+        <!-- 2. Formulario -->
+        <section class="tarjeta" id="formulario">
+            <h2>Ejercicio</h2>
+            <p class="nota">Puedes cambiar los valores o agregar restricciones. El ejercicio precargado es el del enunciado.</p>
+
+            {% if error %}
+                <div class="error">{{ error }}</div>
+            {% endif %}
+
+            <form method="POST">
+                <h3>Función Objetivo (Z)</h3>
+                <div class="fila-campos">
+                    <select name="tipo_opt">
+                        <option value="max" {% if datos.tipo_opt == 'max' %}selected{% endif %}>Maximizar</option>
+                        <option value="min" {% if datos.tipo_opt == 'min' %}selected{% endif %}>Minimizar</option>
+                    </select>
+                    <span>Z =</span>
+                    <input type="text" inputmode="decimal" name="z_x" value="{{ datos.z[0] }}" required placeholder="X1"> X1 +
+                    <input type="text" inputmode="decimal" name="z_y" value="{{ datos.z[1] }}" required placeholder="X2"> X2
+                </div>
+
+                <h3>Restricciones</h3>
+                <div id="restricciones-container">
+                    {% for r in datos.restricciones %}
+                    <div class="restriccion-row">
+                        <input type="text" inputmode="decimal" name="r_x[]" value="{{ r.a[0] }}" required placeholder="X1"> X1 +
+                        <input type="text" inputmode="decimal" name="r_y[]" value="{{ r.a[1] }}" required placeholder="X2"> X2
+                        <select name="r_op[]">
+                            <option value="<=" {% if r.op == '<=' %}selected{% endif %}>≤</option>
+                            <option value=">=" {% if r.op == '>=' %}selected{% endif %}>≥</option>
+                            <option value="=" {% if r.op == '=' %}selected{% endif %}>=</option>
+                        </select>
+                        <input type="text" inputmode="decimal" name="r_c[]" value="{{ r.c }}" required placeholder="C">
+                        <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">Eliminar</button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="btn btn-agregar" id="btn-agregar-restriccion">+ Agregar Restricción</button>
+
+                <p class="nota">Nota: X1 ≥ 0, X2 ≥ 0 se asumen por defecto.</p>
+
+                <button type="submit" class="btn btn-calcular">Calcular paso a paso</button>
+            </form>
+
+            <!-- Plantilla para agregar restricciones desde JavaScript -->
+            <template id="plantilla-restriccion">
+                <div class="restriccion-row">
+                    <input type="text" inputmode="decimal" name="r_x[]" required placeholder="X1"> X1 +
+                    <input type="text" inputmode="decimal" name="r_y[]" required placeholder="X2"> X2
+                    <select name="r_op[]">
+                        <option value="<=">≤</option>
+                        <option value=">=">≥</option>
+                        <option value="=">=</option>
+                    </select>
+                    <input type="text" inputmode="decimal" name="r_c[]" required placeholder="C">
+                    <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">Eliminar</button>
+                </div>
+            </template>
+        </section>
+
+        <!-- 3. Visor paso a paso (solo cuando hay resultados) -->
+        <section class="tarjeta" id="visor" {% if not pasos %}hidden{% endif %}>
+            <h2>Resolución paso a paso</h2>
+
+            <div class="barra-progreso">
+                <div id="progreso-relleno"></div>
+            </div>
+            <p class="indicador" id="indicador"></p>
+
+            <h3 id="titulo-paso"></h3>
+            <div id="explicacion" class="explicacion"></div>
+            <div id="formulas"></div>
+            <div id="tabla-principal"></div>
+            <div id="tabla-resultado"></div>
+
+            <div class="leyenda">
+                <span class="muestra muestra-fila">Fila pivote</span>
+                <span class="muestra muestra-columna">Columna pivote</span>
+                <span class="muestra muestra-elemento">Elemento pivote</span>
+            </div>
+
+            <div class="controles">
+                <button id="btn-anterior" class="btn btn-secundario" type="button">← Anterior</button>
+                <button id="btn-siguiente" class="btn" type="button">Siguiente →</button>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Datos generados por Python (blueprints/gran_m_bp.py) -->
+    <script id="datos-pasos" type="application/json">{{ pasos|tojson }}</script>
+
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" defer></script>
+    <script src="{{ url_for('static', filename='js/gran_m.js') }}" defer></script>
+</body>
+</html>
