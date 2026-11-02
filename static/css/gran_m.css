@@ -1,0 +1,351 @@
+/* static/css/gran_m.css
+   Mismo lenguaje visual que el Método Gráfico: fondo claro, tarjetas blancas,
+   botón azul y enlace de regreso en azul. */
+
+:root {
+    --azul: #007bff;
+    --azul-oscuro: #0056b3;
+    --verde: #28a745;
+    --texto: #333;
+    --borde: #ddd;
+    --fila-pivote: #fff3cd;
+    --columna-pivote: #cce5ff;
+    --elemento-pivote: #ff8c42;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 20px;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+    color: var(--texto);
+    line-height: 1.5;
+}
+
+/* Cabecera: mismo enlace y título que el Método Gráfico */
+.cabecera {
+    margin-bottom: 20px;
+}
+
+.volver {
+    color: var(--azul);
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.cabecera h1 {
+    margin: 10px 0 0;
+    font-size: 2em;
+    color: var(--texto);
+}
+
+/* Contenedor y tarjetas */
+.contenedor {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.tarjeta {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.tarjeta h2 {
+    margin-top: 0;
+    font-size: 1.4em;
+}
+
+.tarjeta h3 {
+    margin: 20px 0 8px;
+    font-size: 1.1em;
+}
+
+.tarjeta h3:first-of-type {
+    margin-top: 0;
+}
+
+.grid-dos {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.caja {
+    border: 1px solid var(--borde);
+    border-radius: 8px;
+    padding: 16px;
+}
+
+.nota {
+    color: #555;
+    font-size: 0.9em;
+    font-style: italic;
+}
+
+/* Tabla de reglas (teoría) */
+.tabla-reglas {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+    background: #fff;
+}
+
+.tabla-reglas th,
+.tabla-reglas td {
+    border: 1px solid var(--borde);
+    padding: 10px;
+    text-align: center;
+}
+
+.tabla-reglas th {
+    background-color: #f2f2f2;
+}
+
+/* Fórmulas del visor */
+.formula {
+    background: #f8f9fa;
+    border-left: 4px solid var(--azul);
+    padding: 8px 12px;
+    margin: 6px 0;
+    overflow-x: auto;
+}
+
+/* Visor paso a paso */
+.barra-progreso {
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+#progreso-relleno {
+    height: 100%;
+    width: 0;
+    background: var(--verde);
+    transition: width 0.3s ease;
+}
+
+.indicador {
+    font-weight: bold;
+    color: #666;
+    margin: 8px 0 0;
+}
+
+.explicacion {
+    margin: 12px 0;
+}
+
+.explicacion ul {
+    padding-left: 20px;
+}
+
+.bloque-tabla {
+    margin-top: 16px;
+}
+
+.bloque-tabla h4 {
+    margin: 0 0 6px;
+    font-size: 1em;
+}
+
+.tabla-envoltorio {
+    overflow-x: auto;
+}
+
+/* Tabla Simplex y clases de resaltado (aplicadas por gran_m.js) */
+.tabla-simplex {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+}
+
+.tabla-simplex th,
+.tabla-simplex td {
+    border: 1px solid var(--borde);
+    padding: 10px;
+    text-align: center;
+    min-width: 70px;
+}
+
+.tabla-simplex th {
+    background-color: #f2f2f2;
+}
+
+.tabla-simplex .celda-base {
+    font-weight: bold;
+    background: #f8f9fa;
+}
+
+/* Fila pivote */
+.tabla-simplex tr.fila-pivote td {
+    background: var(--fila-pivote);
+}
+
+/* Columna pivote */
+.tabla-simplex td.columna-pivote {
+    background: var(--columna-pivote);
+}
+
+.tabla-simplex th.columna-pivote {
+    background: #b8daff;
+    font-weight: bold;
+}
+
+/* Elemento pivote (mayor especificidad para ganar sobre fila y columna) */
+.tabla-simplex tr.fila-pivote td.elemento-pivote {
+    background: var(--elemento-pivote);
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Leyenda */
+.leyenda {
+    margin-top: 16px;
+}
+
+.muestra {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-right: 8px;
+    font-size: 0.9em;
+}
+
+.muestra-fila {
+    background: var(--fila-pivote);
+}
+
+.muestra-columna {
+    background: var(--columna-pivote);
+}
+
+.muestra-elemento {
+    background: var(--elemento-pivote);
+    color: #fff;
+    font-weight: bold;
+}
+
+/* Botones: mismos estilos que el Método Gráfico */
+.controles {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    background: var(--azul);
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+    background: var(--azul-oscuro);
+}
+
+.btn:disabled {
+    background: #b0bec5;
+    cursor: not-allowed;
+}
+
+.btn-secundario {
+    background: #6c757d;
+}
+
+.btn-secundario:hover:not(:disabled) {
+    background: #545b62;
+}
+
+/* Formulario (mismo estilo que el Método Gráfico) */
+.fila-campos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.restriccion-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.tarjeta input[type="text"],
+.tarjeta select {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.tarjeta input[type="text"] {
+    width: 80px;
+}
+
+.btn-agregar {
+    margin-bottom: 20px;
+    background: #28a745;
+    padding: 8px 15px;
+    font-size: 14px;
+}
+
+.btn-agregar:hover:not(:disabled) {
+    background: #1e7e34;
+}
+
+.btn-calcular {
+    width: 100%;
+}
+
+.btn-eliminar {
+    padding: 5px 10px;
+    background: #dc3545;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+.btn-eliminar:hover {
+    background: #b02a37;
+}
+
+.error {
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    padding: 15px;
+    border-radius: 5px;
+    font-weight: bold;
+    margin-bottom: 20px;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    body {
+        padding: 12px;
+    }
+
+    .controles {
+        flex-direction: column;
+    }
+}
