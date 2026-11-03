@@ -1197,12 +1197,11 @@ html {
 .paso[data-estado="optimo"] h3 { color: var(--optimo); }
 .paso[data-estado="optimo"] h3::before { content: '✓'; }
 
-/* Resultado: abre con una regla y cierra con doble regla, como un total */
+/* Resultado: la regla separa los valores de la explicación que sigue */
 .resumen-resultado {
-    margin-top: var(--esp-3);
-    padding-block: var(--esp-3) var(--esp-4);
-    border-top: 1px solid var(--tinta);
-    border-bottom: 4px double var(--tinta);
+    margin-top: var(--esp-2);
+    padding-bottom: var(--esp-4);
+    border-bottom: 1px solid var(--linea);
 }
 
 .resultado-estado {
