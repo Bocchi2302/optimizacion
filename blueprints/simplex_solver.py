@@ -107,6 +107,7 @@ class _Tabla:
             "label": etiqueta,
             "columns": self.nombres + ["LD"],
             "basis": [self.nombres[j] for j in self.base],
+            "basis_idx": list(self.base),
             "rows": filas,
             "pivot": list(pivote) if pivote else None,
         })
