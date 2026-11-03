@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, render_template
 from blueprints.grafico_bp import grafico_bp
+from blueprints.mod_bp import mod_bp
 from blueprints.gran_m_bp import gran_m_bp
 from blueprints.vogel_bp import vogel_bp
 from blueprints.regresion_bp import regresion_bp
@@ -11,6 +12,7 @@ app = Flask(__name__)
 # Registrar el Blueprint del Método Gráfico
 # Todo lo que esté en grafico_bp tendrá el prefijo /metodo_grafico
 app.register_blueprint(grafico_bp, url_prefix='/metodo_grafico')
+app.register_blueprint(mod_bp, url_prefix='/metodo_mod')
 
 # Registrar el Blueprint del Método de la Gran M
 app.register_blueprint(gran_m_bp, url_prefix='/metodo_gran_m')
@@ -26,4 +28,4 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    app.run(debug=False, port=5000)
