@@ -1,377 +1,300 @@
 /* static/css/gran_m.css
-   Mismo lenguaje visual que el Método Gráfico: fondo claro, tarjetas blancas,
-   botón azul y enlace de regreso en azul. */
+   Método de la Gran M dentro de OptiLab. Parte de la identidad del inicio (tinta, pizarra,
+   dorado, Space Grotesk + Inter) y reserva dos significados:
+   vino = penalización M; dorado = dónde estás o qué cambió. */
 
+/* ── Tokens ─────────────────────────────────────────── */
 :root {
-    --azul: #007bff;
-    --azul-oscuro: #0056b3;
-    --verde: #28a745;
-    --texto: #333;
-    --borde: #ddd;
-    --fila-pivote: #fff3cd;
-    --columna-pivote: #cce5ff;
-    --elemento-pivote: #ff8c42;
+    color-scheme: light;
+
+    /* Base */
+    --tinta: #1a1a2e;
+    --pizarra: #64748b;          /* texto secundario, solo sobre papel */
+    --pizarra-honda: #475569;    /* texto secundario sobre tintes */
+    --papel: #ffffff;
+    --dorado: #c99700;           /* marcas, nunca texto */
+    --dorado-texto: #7a5a00;
+    --vino-m: #8a1c5a;
+
+    /* Estructura */
+    --niebla: #f1f4f8;
+    --linea: #d9dfe7;
+    --linea-fuerte: #8492a6;     /* borde de campos: 3:1 sobre papel */
+
+    /* Pivote: fila y columna se separan por la forma de sus reglas, no solo por el tono */
+    --fila-pivote: #dbe6f4;
+    --fila-pivote-regla: #38598b;
+    --columna-pivote: #d6eee3;
+    --columna-pivote-regla: #2a6f55;
+    --elemento-pivote: var(--tinta);
+    --celda-cambiada: #fdf3d3;
+
+    /* Estados */
+    --optimo: #14613f;
+    --optimo-fondo: #e6f3ec;
+    --no-factible: #b42318;
+    --no-factible-fondo: #fdecea;
+    --no-acotado: #3a3f94;
+    --no-acotado-fondo: #ebecf8;
+
+    /* Tipografía */
+    --fuente-titulo: 'Space Grotesk', system-ui, sans-serif;
+    --fuente-texto: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --texto-pagina: clamp(1.625rem, 4vw, 2rem);
+    --texto-valor: 3rem;
+    --texto-paso: 1.5rem;
+    --texto-seccion: 1.125rem;
+    --texto-cuerpo: 1rem;
+    --texto-tabla: 0.9375rem;
+    --texto-nota: 0.8125rem;
+
+    /* Espaciado */
+    --esp-1: 0.25rem;
+    --esp-2: 0.5rem;
+    --esp-3: 0.75rem;
+    --esp-4: 1rem;
+    --esp-5: 1.5rem;
+    --esp-6: 2rem;
+    --esp-7: 3rem;
+    --margen-hoja: clamp(16px, 4vw, 40px);
+
+    /* Radios y objetivos táctiles */
+    --radio-s: 4px;
+    --radio-m: 6px;
+    --tactil: 44px;
 }
 
-* {
+/* ── Base ───────────────────────────────────────────── */
+*, *::before, *::after {
     box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
 }
 
 body {
     margin: 0;
-    padding: 20px;
-    font-family: Arial, sans-serif;
-    background-color: #f8f9fa;
-    color: var(--texto);
-    line-height: 1.5;
+    background: var(--papel);
+    color: var(--tinta);
+    font-family: var(--fuente-texto);
+    font-size: var(--texto-cuerpo);
+    line-height: 1.55;
 }
 
-/* Cabecera: mismo enlace y título que el Método Gráfico */
-.cabecera {
-    margin-bottom: 20px;
+h1, h2, h3, h4 {
+    margin: 0;
+    font-family: var(--fuente-titulo);
+    font-weight: 600;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
 }
 
-.volver {
-    color: var(--azul);
-    font-weight: bold;
-    text-decoration: none;
+h1 { font-size: var(--texto-pagina); }
+h2, h4 { font-size: var(--texto-seccion); }
+h3 { font-size: var(--texto-paso); }
+
+p { margin: 0; }
+
+a {
+    color: inherit;
 }
 
-.cabecera h1 {
-    margin: 10px 0 0;
-    font-size: 2em;
-    color: var(--texto);
-}
-
-/* Contenedor y tarjetas */
-.contenedor {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.tarjeta {
-    background: #fff;
-    border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.tarjeta h2 {
-    margin-top: 0;
-    font-size: 1.4em;
-}
-
-.tarjeta h3 {
-    margin: 20px 0 8px;
-    font-size: 1.1em;
-}
-
-.tarjeta h3:first-of-type {
-    margin-top: 0;
-}
-
-.grid-dos {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 16px;
-}
-
-.caja {
-    border: 1px solid var(--borde);
-    border-radius: 8px;
-    padding: 16px;
-}
-
-.nota {
-    color: #555;
-    font-size: 0.9em;
-    font-style: italic;
-}
-
-/* Tabla de reglas (teoría) */
-.tabla-reglas {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 16px;
-    background: #fff;
-}
-
-.tabla-reglas th,
-.tabla-reglas td {
-    border: 1px solid var(--borde);
-    padding: 10px;
-    text-align: center;
-}
-
-.tabla-reglas th {
-    background-color: #f2f2f2;
-}
-
-/* Fórmulas del visor */
-.formula {
-    background: #f8f9fa;
-    border-left: 4px solid var(--azul);
-    padding: 8px 12px;
-    margin: 6px 0;
-    overflow-x: auto;
-}
-
-/* Visor paso a paso */
-.barra-progreso {
-    height: 8px;
-    background: #e9ecef;
-    border-radius: 4px;
-    overflow: hidden;
-}
-
-#progreso-relleno {
-    height: 100%;
-    width: 0;
-    background: var(--verde);
-    transition: width 0.3s ease;
-}
-
-.indicador {
-    font-weight: bold;
-    color: #666;
-    margin: 8px 0 0;
-}
-
-.explicacion {
-    margin: 12px 0;
-}
-
-.explicacion ul {
-    padding-left: 20px;
-}
-
-.bloque-tabla {
-    margin-top: 16px;
-}
-
-.bloque-tabla h4 {
-    margin: 0 0 6px;
-    font-size: 1em;
-}
-
-.tabla-envoltorio {
-    overflow-x: auto;
-}
-
-/* Tabla Simplex y clases de resaltado (aplicadas por gran_m.js) */
-.tabla-simplex {
-    width: 100%;
-    border-collapse: collapse;
-    background: #fff;
-}
-
-.tabla-simplex th,
-.tabla-simplex td {
-    border: 1px solid var(--borde);
-    padding: 10px;
-    text-align: center;
-    min-width: 70px;
-}
-
-.tabla-simplex th {
-    background-color: #f2f2f2;
-}
-
-.tabla-simplex .celda-base {
-    font-weight: bold;
-    background: #f8f9fa;
-}
-
-/* Fila pivote */
-.tabla-simplex tr.fila-pivote td {
-    background: var(--fila-pivote);
-}
-
-/* Columna pivote */
-.tabla-simplex td.columna-pivote {
-    background: var(--columna-pivote);
-}
-
-.tabla-simplex th.columna-pivote {
-    background: #b8daff;
-    font-weight: bold;
-}
-
-/* Elemento pivote (mayor especificidad para ganar sobre fila y columna) */
-.tabla-simplex tr.fila-pivote td.elemento-pivote {
-    background: var(--elemento-pivote);
-    color: #fff;
-    font-weight: bold;
-}
-
-/* Leyenda */
-.leyenda {
-    margin-top: 16px;
-}
-
-.muestra {
-    display: inline-block;
-    padding: 4px 10px;
-    border-radius: 4px;
-    margin-right: 8px;
-    font-size: 0.9em;
-}
-
-.muestra-fila {
-    background: var(--fila-pivote);
-}
-
-.muestra-columna {
-    background: var(--columna-pivote);
-}
-
-.muestra-elemento {
-    background: var(--elemento-pivote);
-    color: #fff;
-    font-weight: bold;
-}
-
-/* Botones: mismos estilos que el Método Gráfico */
-.controles {
-    display: flex;
-    justify-content: space-between;
-    gap: 12px;
-    margin-top: 20px;
-}
-
-.btn {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 5px;
-    background: var(--azul);
-    color: #fff;
-    font-size: 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.btn:hover:not(:disabled) {
-    background: var(--azul-oscuro);
-}
-
-.btn:disabled {
-    background: #b0bec5;
-    cursor: not-allowed;
-}
-
-.btn-secundario {
-    background: #6c757d;
-}
-
-.btn-secundario:hover:not(:disabled) {
-    background: #545b62;
-}
-
-/* Formulario (mismo estilo que el Método Gráfico) */
-.fila-campos {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.restriccion-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 15px;
-}
-
-.tarjeta input[type="text"],
-.tarjeta select {
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.tarjeta input[type="text"] {
-    width: 80px;
-}
-
-.btn-agregar {
-    margin-bottom: 20px;
-    background: #28a745;
-    padding: 8px 15px;
-    font-size: 14px;
-}
-
-.btn-agregar:hover:not(:disabled) {
-    background: #1e7e34;
-}
-
-.btn-calcular {
-    width: 100%;
-}
-
-.btn-eliminar {
-    padding: 5px 10px;
-    background: #dc3545;
-    color: #fff;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-}
-
-.btn-eliminar:hover {
-    background: #b02a37;
-}
-
-.error {
-    color: #721c24;
-    background-color: #f8d7da;
-    border: 1px solid #f5c6cb;
-    padding: 15px;
-    border-radius: 5px;
-    font-weight: bold;
-    margin-bottom: 20px;
+:focus-visible {
+    outline: 3px solid var(--tinta);
+    outline-offset: 2px;
 }
 
 [hidden] {
     display: none !important;
 }
 
-/* Contexto del ejercicio */
-.contexto {
+.solo-lector {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.nota {
+    color: var(--pizarra);
+    font-size: var(--texto-nota);
+    font-weight: 500;
+}
+
+/* ── Cabecera y hoja ────────────────────────────────── */
+.cabecera,
+.hoja {
     width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-family: Consolas, monospace;
-    font-size: 14px;
-    resize: vertical;
-    margin-bottom: 12px;
+    max-width: 1120px;
+    margin-inline: auto;
+    padding-inline: var(--margen-hoja);
 }
 
-.avisos {
-    margin-top: 16px;
-    padding: 12px 15px;
-    background: #fff3cd;
-    border: 1px solid #ffeeba;
-    border-radius: 5px;
-    color: #856404;
+.cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    padding-block: var(--esp-3);
+    border-bottom: 1px solid var(--linea);
 }
 
-.avisos ul {
-    margin: 8px 0 0;
-    padding-left: 20px;
+.marca {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tactil);
+    font-family: var(--fuente-titulo);
+    font-size: 1.15rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    text-decoration: none;
 }
 
-/* Responsive */
-@media (max-width: 600px) {
-    body {
-        padding: 12px;
+.volver {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--tactil);
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-underline-offset: 3px;
+}
+
+.volver:hover {
+    color: var(--tinta);
+}
+
+.hoja {
+    padding-block: var(--esp-5) var(--esp-7);
+}
+
+.bajada {
+    max-width: 68ch;
+    margin-top: var(--esp-2);
+    color: var(--pizarra-honda);
+}
+
+/* Bloques plegables: teoría y modelo */
+.plegable {
+    border-bottom: 1px solid var(--linea);
+}
+
+.plegable > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2) var(--esp-3);
+    min-height: var(--tactil);
+    padding-block: var(--esp-2);
+    cursor: pointer;
+    font-family: var(--fuente-titulo);
+    font-weight: 500;
+}
+
+.plegable > summary::-webkit-details-marker {
+    display: none;
+}
+
+.plegable > summary::before {
+    content: '';
+    width: 0;
+    height: 0;
+    border-block: 5px solid transparent;
+    border-left: 7px solid var(--pizarra-honda);
+    transition: transform 0.15s ease;
+}
+
+.plegable[open] > summary::before {
+    transform: rotate(90deg);
+}
+
+.teoria {
+    margin-top: var(--esp-5);
+    border-top: 1px solid var(--linea);
+}
+
+.teoria-cuerpo {
+    max-width: 68ch;
+    padding-bottom: var(--esp-4);
+}
+
+.teoria-cuerpo ol {
+    margin: var(--esp-3) 0 0;
+    padding-left: var(--esp-5);
+}
+
+.teoria-cuerpo li + li {
+    margin-top: var(--esp-1);
+}
+
+/* Enunciado y modelo: a la izquierda el texto, a la derecha lo que el método lee de él */
+.mesa {
+    display: grid;
+    gap: var(--esp-6);
+    padding-block: var(--esp-5);
+}
+
+@media (min-width: 960px) {
+    .mesa {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
     }
 
-    .controles {
-        flex-direction: column;
+    .modelo {
+        padding-left: var(--esp-6);
+        border-left: 1px solid var(--linea);
+    }
+}
+
+/* ── Botones ────────────────────────────────────────── */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+    min-height: var(--tactil);
+    padding: var(--esp-2) var(--esp-4);
+    border: 1px solid var(--tinta);
+    border-radius: var(--radio-s);
+    background: var(--tinta);
+    color: var(--papel);
+    font: inherit;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.btn:hover:not(:disabled) {
+    background: #2e2e4d;
+}
+
+.btn:disabled {
+    border-color: var(--linea);
+    background: var(--niebla);
+    color: var(--pizarra-honda);
+    cursor: not-allowed;
+}
+
+.btn-secundario {
+    background: var(--papel);
+    color: var(--tinta);
+}
+
+.btn-secundario:hover:not(:disabled) {
+    background: var(--niebla);
+}
+
+/* ── Movimiento reducido ────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
     }
 }

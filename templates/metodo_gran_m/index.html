@@ -3,7 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método de la Gran M</title>
+    <title>Método de la Gran M · OptiLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gran_m.css') }}">
 </head>
@@ -24,32 +27,44 @@
     {%- endmacro %}
 
     <header class="cabecera">
-        <a href="{{ url_for('index') }}" class="volver">⬅ Volver al Inicio</a>
-        <h1>Módulo: Método de la Gran M</h1>
+        <a href="{{ url_for('index') }}" class="marca">OptiLab</a>
+        <a href="{{ url_for('index') }}" class="volver">Volver al inicio</a>
     </header>
 
-    <main class="contenedor">
+    <main class="hoja">
+        <h1>Método de la Gran M</h1>
+        <p class="bajada">Escribe el ejercicio, revisa el modelo y sigue cómo el método saca de la base las variables artificiales.</p>
 
-        <!-- 1. Teoría breve -->
-        <section class="tarjeta" id="teoria">
-            <h2>Método de la Gran M</h2>
-            <p>
-                Se usa cuando alguna restricción es <strong>≥</strong> o <strong>=</strong>, porque el origen
-                no sirve como solución básica inicial. Se agregan variables artificiales $A_i$ y se penalizan con $M$.
-            </p>
-            <ol class="pasos-teoria">
-                <li><strong>Estandarizar:</strong> ≤ suma $+S_i$; ≥ resta $-S_i$ y suma $+A_i$; = suma $+A_i$.</li>
-                <li><strong>Penalizar:</strong> en minimización se suma $M A_i$ a Z; en maximización se resta.</li>
-                <li><strong>Eliminar</strong> las básicas de la fila Z.</li>
-                <li><strong>Pivotear:</strong> entra la variable que mejora Z y sale la de menor razón RHS / coeficiente.</li>
-                <li><strong>Repetir</strong> hasta que la fila Z no tenga coeficientes que mejoren Z.</li>
-                <li><strong>Verificar</strong> que las artificiales valgan 0.</li>
-            </ol>
-        </section>
+        <details class="plegable teoria" id="teoria" {% if not pasos %}open{% endif %}>
+            <summary>Cómo funciona el método</summary>
+            <div class="teoria-cuerpo">
+                <p>
+                    Sirve cuando alguna restricción es <strong>≥</strong> o <strong>=</strong>, porque el origen no da
+                    una solución básica inicial. El método agrega variables artificiales $A_i$ y las penaliza con $M$,
+                    un número tan grande que obliga a sacarlas de la base.
+                </p>
+                <ol>
+                    <li><strong>Estandarizar:</strong> ≤ suma $+S_i$; ≥ resta $-S_i$ y suma $+A_i$; = suma $+A_i$.</li>
+                    <li><strong>Penalizar:</strong> en minimización se suma $M A_i$ a Z; en maximización se resta.</li>
+                    <li><strong>Preparar la fila Z:</strong> se hacen 0 los coeficientes de las variables básicas.</li>
+                    <li><strong>Pivotear:</strong> entra la variable que mejora Z y sale la de menor razón RHS / coeficiente.</li>
+                    <li><strong>Repetir</strong> hasta que la fila Z no tenga coeficientes que mejoren Z.</li>
+                    <li><strong>Verificar</strong> que las artificiales valgan 0.</li>
+                </ol>
+            </div>
+        </details>
 
-        <!-- 2. Contexto del ejercicio: de aquí se sacan las variables y el modelo -->
-        <section class="tarjeta" id="contexto">
-            <h2>1. Contexto del ejercicio</h2>
+        {% if pasos %}
+        <details class="plegable panel-modelo" id="panel-modelo">
+            <summary>
+                <span id="resumen-modelo">Modelo con {{ datos.variables|length }} variables y {{ datos.restricciones|length }} restricciones</span>
+                <span class="resumen-accion">Editar modelo</span>
+            </summary>
+        {% endif %}
+        <div class="mesa">
+        <!-- Enunciado: de aquí se sacan las variables y el modelo -->
+        <section class="enunciado" id="contexto">
+            <h2>Enunciado</h2>
             <p class="nota">
                 Escribe el ejercicio. Las líneas con la función objetivo y las restricciones (por ejemplo
                 <em>Maximizar Z = 3x + 5y</em> o <em>2x + y ≤ 18</em>) se convierten en el modelo. El texto
@@ -70,9 +85,9 @@
             {% endif %}
         </section>
 
-        <!-- 3. Modelo editable y cálculo -->
-        <section class="tarjeta" id="formulario">
-            <h2>2. Modelo</h2>
+        <!-- Modelo editable y cálculo -->
+        <section class="modelo" id="formulario">
+            <h2>Modelo</h2>
 
             {% if error %}
                 <div class="error">{{ error }}</div>
@@ -118,9 +133,14 @@
             {% endif %}
         </section>
 
-        <!-- 4. Visor paso a paso (solo cuando hay resultados) -->
-        <section class="tarjeta" id="visor" {% if not pasos %}hidden{% endif %}>
-            <h2>3. Resolución paso a paso</h2>
+        </div>
+        {% if pasos %}
+        </details>
+        {% endif %}
+
+        <!-- Visor paso a paso (solo cuando hay resultados) -->
+        <section class="visor" id="visor" {% if not pasos %}hidden{% endif %}>
+            <h2>Resolución paso a paso</h2>
 
             <div class="barra-progreso">
                 <div id="progreso-relleno"></div>
