@@ -1,3 +1,6 @@
 # Archivos compilados de Python (se regeneran al ejecutar la app)
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.venv/
