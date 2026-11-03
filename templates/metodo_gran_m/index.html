@@ -239,6 +239,12 @@
                     <li data-leyenda="cambio"><span class="muestra muestra-cambio"></span>Celda que cambió</li>
                     <li data-leyenda="m"><span class="termino-m">M</span>Término con penalización</li>
                 </ul>
+                <details class="operaciones" id="operaciones" open hidden>
+                    <summary>Cómo se calculó cada fila</summary>
+                    <p class="nota">Señala una operación para ver su fila en las tablas.</p>
+                    <ul id="lista-operaciones"></ul>
+                    <p class="nota" id="sin-cambio"></p>
+                </details>
                 <button type="button" class="btn btn-secundario btn-editar" id="btn-editar-modelo" hidden>Editar modelo</button>
             </div>
 
@@ -249,7 +255,13 @@
                     <p class="fase-actual" id="fase-actual"></p>
                     <p class="nota atajos">Flechas, Inicio y Fin para navegar</p>
                 </div>
-                <button id="btn-siguiente" class="btn" type="button">Siguiente</button>
+                <div class="controles-derecha">
+                    <button id="btn-reproducir" class="btn btn-secundario" type="button" aria-label="Reproducir los pasos">
+                        <span id="reproducir-icono" aria-hidden="true">▶</span>
+                        <span class="reproducir-texto" id="reproducir-texto">Reproducir</span>
+                    </button>
+                    <button id="btn-siguiente" class="btn" type="button">Siguiente</button>
+                </div>
             </div>
         </section>
 

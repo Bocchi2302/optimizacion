@@ -314,7 +314,7 @@
         elementoSvg('line', { class: 'mapa-eje', x1: aX(0), x2: aX(0), y1: aY(0), y2: aY(limites.y) }, svg);
         const nombreX = elementoSvg('text', { class: 'mapa-nombre', x: aX(limites.x), y: MAPA.alto - 4, 'text-anchor': 'end' }, svg);
         nombreX.textContent = modelo.visibles[0];
-        const nombreY = elementoSvg('text', { class: 'mapa-nombre', x: 4, y: aY(limites.y) + 10 }, svg);
+        const nombreY = elementoSvg('text', { class: 'mapa-nombre', x: aX(0) + 6, y: aY(limites.y) + 12 }, svg);
         nombreY.textContent = modelo.visibles[1];
 
         const region = regionFactible(modelo, limites.x, limites.y);
@@ -847,6 +847,12 @@
             botonesVista: Array.from(document.querySelectorAll('[data-vista]')),
             leyenda: document.getElementById('leyenda'),
             leyendaColumna: document.getElementById('leyenda-columna'),
+            operaciones: document.getElementById('operaciones'),
+            listaOperaciones: document.getElementById('lista-operaciones'),
+            sinCambio: document.getElementById('sin-cambio'),
+            reproducir: document.getElementById('btn-reproducir'),
+            reproducirIcono: document.getElementById('reproducir-icono'),
+            reproducirTexto: document.getElementById('reproducir-texto'),
             anterior: document.getElementById('btn-anterior'),
             siguiente: document.getElementById('btn-siguiente')
         };
@@ -854,6 +860,7 @@
         let indiceActual = 0;
         let vista = 'juntas';
         let moverEnMapa = null;
+        let temporizador = null;
 
         // Datos derivados de cada paso, sin tocar el contrato del solver
         const tablaInicial = pasos.find(function (paso) { return paso.tabla; }).tabla;
@@ -1263,7 +1270,7 @@
             }, { passive: true });
 
             const tabla = document.createElement('table');
-            tabla.className = 'tabla-simplex';
+            tabla.className = opciones.animar ? 'tabla-simplex animar-tabla' : 'tabla-simplex';
 
             const titulo = tabla.createCaption();
             titulo.className = 'solo-lector';
@@ -1304,6 +1311,7 @@
             const cuerpo = tabla.createTBody();
             datos.filas.forEach(function (fila, i) {
                 const tr = cuerpo.insertRow();
+                tr.dataset.fila = i;
                 if (i === 0) {
                     tr.classList.add('fila-z');
                 }
@@ -1359,6 +1367,11 @@
                     }
                     if (previa && previa.filas[i].celdas[j] !== valor) {
                         td.classList.add('cambiada');
+                        if (opciones.origen) {
+                            // La ola sale del elemento pivote hacia las celdas lejanas
+                            const distancia = Math.abs(i - opciones.origen.fila) + Math.abs(j - opciones.origen.columna);
+                            td.style.setProperty('--retardo', `${0.7 + distancia * 0.05}s`);
+                        }
                         td.appendChild(textoOculto(', cambió'));
                     }
                 });
@@ -1455,6 +1468,7 @@
                     etiqueta: comparar ? 'Antes del pivoteo' : null,
                     rol: comparar ? 'antes' : null,
                     pivote: paso.pivote,
+                    animar: animar,
                     atascadas: estadoDe(paso.titulo) === 'no-factible',
                     anchos: anchos
                 }));
@@ -1468,6 +1482,7 @@
                     etiqueta: 'Después del pivoteo',
                     rol: 'despues',
                     previa: paso.tabla,
+                    origen: paso.pivote,
                     animar: animar,
                     anchos: anchos
                 }));
@@ -1538,6 +1553,48 @@
             }
         }
 
+        // Reproduce lo que hizo pivotear() en el solver, fila por fila
+        function mostrarOperaciones(paso) {
+            const lista = elementos.listaOperaciones;
+            lista.replaceChildren();
+            elementos.operaciones.hidden = !paso.tabla_resultado;
+            if (!paso.tabla_resultado) {
+                return;
+            }
+            const filaPivote = paso.pivote.fila;
+            const columnaPivote = paso.pivote.columna;
+            const antes = paso.tabla.filas;
+            const entra = paso.tabla_resultado.filas[filaPivote].base;
+            const sinCambio = [];
+
+            antes.forEach(function (fila, i) {
+                const coeficiente = fila.celdas[columnaPivote];
+                if (i !== filaPivote && coeficiente === '0') {
+                    sinCambio.push(fila.base);
+                    return;
+                }
+                const boton = document.createElement('button');
+                boton.type = 'button';
+                boton.className = 'operacion';
+                boton.dataset.fila = i;
+                boton.textContent = i === filaPivote
+                    ? `Nueva ${entra} = ${fila.base} ÷ ${acortarDecimales(coeficiente)}`
+                    : `Nueva ${fila.base} = ${fila.base} − (${acortarDecimales(coeficiente)}) × nueva ${entra}`;
+                const item = document.createElement('li');
+                item.appendChild(boton);
+                lista.appendChild(item);
+            });
+            elementos.sinCambio.textContent = sinCambio.length > 0
+                ? `Sin cambio: ${sinCambio.join(', ')}, porque su coeficiente en la columna pivote ya es 0.`
+                : '';
+        }
+
+        function enfocarFila(fila) {
+            elementos.tablas.querySelectorAll('tr[data-fila]').forEach(function (tr) {
+                tr.classList.toggle('fila-foco', tr.dataset.fila === fila);
+            });
+        }
+
         function mostrarPaso(opciones) {
             const paso = pasos[indiceActual];
             const titulo = limpiarTitulo(paso.titulo);
@@ -1576,6 +1633,7 @@
             });
 
             dibujarTablas(paso, opciones.animar);
+            mostrarOperaciones(paso);
 
             if (elementos.aviso) {
                 elementos.aviso.hidden = indiceActual === pasos.length - 1;
@@ -1592,18 +1650,85 @@
                 if (posicion < 0 || posicion > window.innerHeight * 0.5) {
                     elementos.fases.scrollIntoView({ block: 'start', behavior: movimiento.matches ? 'auto' : 'smooth' });
                 }
+            }
+            if (opciones.foco || opciones.automatico) {
                 anunciar();
+            }
+            if (opciones.direccion) {
+                elementos.paso.style.setProperty('--desde', `${opciones.direccion * 16}px`);
+                elementos.paso.classList.remove('cambio-paso');
+                void elementos.paso.offsetWidth; // reinicia la animación
+                elementos.paso.classList.add('cambio-paso');
             }
         }
 
-        function irA(indice) {
+        function pintarReproduccion() {
+            const activa = temporizador !== null;
+            elementos.reproducirIcono.textContent = activa ? '❚❚' : '▶';
+            elementos.reproducirTexto.textContent = activa ? 'Pausar' : 'Reproducir';
+            elementos.reproducir.setAttribute('aria-label', activa ? 'Pausar la reproducción' : 'Reproducir los pasos');
+        }
+
+        function detenerReproduccion() {
+            if (temporizador !== null) {
+                clearInterval(temporizador);
+                temporizador = null;
+                pintarReproduccion();
+            }
+        }
+
+        // La reproducción no mueve el foco: el botón sigue a mano para pausar
+        function avanzarSolo() {
+            irA(indiceActual + 1, true);
+            if (indiceActual === pasos.length - 1) {
+                detenerReproduccion();
+            }
+        }
+
+        function irA(indice, automatico) {
+            if (!automatico) {
+                detenerReproduccion();
+            }
             if (indice < 0 || indice >= pasos.length || indice === indiceActual) {
                 return;
             }
-            const animar = indice > indiceActual;
+            const adelante = indice > indiceActual;
             indiceActual = indice;
-            mostrarPaso({ foco: true, animar: animar });
+            mostrarPaso({
+                foco: !automatico,
+                automatico: Boolean(automatico),
+                animar: adelante,
+                direccion: adelante ? 1 : -1
+            });
         }
+
+        elementos.reproducir.addEventListener('click', function () {
+            if (temporizador !== null) {
+                detenerReproduccion();
+                return;
+            }
+            if (indiceActual === pasos.length - 1) {
+                irA(0, true);
+            }
+            temporizador = setInterval(avanzarSolo, 3200);
+            pintarReproduccion();
+        });
+
+        elementos.listaOperaciones.addEventListener('mouseover', function (evento) {
+            const boton = evento.target.closest('[data-fila]');
+            if (boton) {
+                enfocarFila(boton.dataset.fila);
+            }
+        });
+        elementos.listaOperaciones.addEventListener('focusin', function (evento) {
+            enfocarFila(evento.target.dataset.fila);
+        });
+        elementos.listaOperaciones.addEventListener('mouseleave', function () {
+            enfocarFila(null);
+        });
+        elementos.listaOperaciones.addEventListener('focusout', function () {
+            enfocarFila(null);
+        });
 
         elementos.anterior.addEventListener('click', function () {
             irA(indiceActual - 1);

@@ -1039,7 +1039,7 @@ html {
 }
 
 .tachada.animar {
-    animation: tachar 0.9s ease-out both;
+    animation: tachar 0.9s ease-out 0.7s both;
 }
 
 @keyframes tachar {
@@ -1068,6 +1068,11 @@ html {
 
 .paso h3 {
     scroll-margin-top: var(--esp-4);
+}
+
+/* Recibe el foco por programa al cambiar de paso; no es un control */
+#titulo-paso:focus {
+    outline: none;
 }
 
 .hechos {
@@ -1782,4 +1787,126 @@ html {
 .paso[data-estado="no-factible"] .mapa-recta line,
 .paso[data-estado="no-acotado"] .mapa-recta line {
     stroke: var(--pizarra-honda);
+}
+
+/* ── Movimiento de los pasos ────────────────────────── */
+.cambio-paso .paso-texto,
+.cambio-paso .tablas {
+    animation: entrar-paso 0.32s ease-out;
+}
+
+@keyframes entrar-paso {
+    from { opacity: 0; transform: translateX(var(--desde, 16px)); }
+}
+
+/* El pivote se arma en orden: columna que entra, fila que sale, elemento */
+.animar-tabla .columna-pivote {
+    animation: pintar 0.35s ease-out 0.05s backwards;
+}
+
+.animar-tabla .fila-pivote > * {
+    animation: pintar 0.35s ease-out 0.3s backwards;
+}
+
+.animar-tabla .elemento-pivote {
+    animation: pintar 0.35s ease-out 0.55s backwards;
+}
+
+@keyframes pintar {
+    from { background-color: transparent; box-shadow: none; }
+}
+
+.animar-tabla .cambiada {
+    animation: ola 0.55s ease-out var(--retardo, 0.7s) backwards;
+}
+
+@keyframes ola {
+    from { background-color: var(--dorado); color: var(--sobre-acento); }
+}
+
+.tabla-simplex tbody tr:hover > * {
+    filter: brightness(1.14);
+}
+
+.tabla-simplex .fila-foco > * {
+    box-shadow: inset 0 2px 0 var(--dorado), inset 0 -2px 0 var(--dorado);
+}
+
+.operaciones {
+    margin-top: var(--esp-3);
+    border-top: 1px solid var(--linea);
+}
+
+.operaciones > summary {
+    display: flex;
+    align-items: center;
+    min-height: var(--tactil);
+    cursor: pointer;
+    font-family: var(--fuente-titulo);
+    font-weight: 500;
+}
+
+.operaciones ul {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+    gap: var(--esp-2);
+    margin: var(--esp-2) 0;
+    padding: 0;
+    list-style: none;
+}
+
+.operacion {
+    width: 100%;
+    min-height: var(--tactil);
+    padding: var(--esp-1) var(--esp-3);
+    border: 1px solid var(--linea);
+    border-radius: var(--radio-m);
+    background: var(--fondo);
+    color: var(--tinta);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.operacion:hover {
+    border-color: var(--dorado);
+}
+
+.paso[data-estado] .operaciones {
+    display: none;
+}
+
+.controles-derecha {
+    display: flex;
+    gap: var(--esp-2);
+}
+
+@media (max-width: 720px) {
+    /* La posición ocupa su propia fila para no partirse entre los botones */
+    .controles {
+        flex-wrap: wrap;
+        gap: var(--esp-1) var(--esp-2);
+    }
+
+    .posicion-bloque {
+        order: -1;
+        display: flex;
+        flex-basis: 100%;
+        justify-content: center;
+        align-items: baseline;
+        gap: var(--esp-2);
+    }
+
+    .reproducir-texto {
+        display: none;
+    }
+
+    #btn-reproducir {
+        min-width: var(--tactil);
+        padding-inline: var(--esp-2);
+    }
 }
