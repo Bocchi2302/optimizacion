@@ -3,150 +3,545 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método de aproximación de Vogel</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 24px; background: #f5f7fa; color: #263238; }
-        main { max-width: 1100px; margin: 0 auto; }
-        .panel { margin-top: 20px; padding: 22px; background: white; border-radius: 8px; box-shadow: 0 2px 8px #00000012; overflow-x: auto; }
-        .volver { color: #1769aa; text-decoration: none; font-weight: bold; }
-        .acciones { display: flex; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
-        button { padding: 10px 14px; border: 0; border-radius: 5px; color: white; background: #1769aa; cursor: pointer; }
-        button.secundario { background: #536878; }
-        button.calcular { width: 100%; margin-top: 18px; background: #218838; font-size: 1rem; }
-        table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-        th, td { padding: 9px; border: 1px solid #d6dce1; text-align: center; }
-        th { background: #edf2f6; }
-        input[type="number"] { box-sizing: border-box; width: 95px; padding: 8px; border: 1px solid #b9c3cc; border-radius: 4px; }
-        .error { margin-top: 18px; padding: 12px; border: 1px solid #efb4b4; border-radius: 5px; color: #842029; background: #f8d7da; }
-        .resultado { margin-top: 24px; padding: 18px; border: 1px solid #b7dfc1; border-radius: 6px; background: #e9f7ed; }
-        .nota { color: #4c5964; }
-        .pasos { text-align: left; }
-        @media (max-width: 600px) { body { padding: 14px; } .panel { padding: 14px; } }
-    </style>
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#f7f7f4">
+    <script>
+        /* Aplica el tema antes de pintar (sin parpadeo): lo guardado o, si no hay, el del sistema */
+        (function () {
+            var t = null;
+            try { t = localStorage.getItem('tema-optilab'); } catch (e) {}
+            if (t !== 'claro' && t !== 'oscuro') t = (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) ? 'oscuro' : 'claro';
+            document.documentElement.dataset.tema = t;
+        })();
+    </script>
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/usta-favicon.png') }}">
+    <title>Método de Vogel · OptiLab</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/vogel.css') }}">
 </head>
 <body>
-<main>
-    <a class="volver" href="{{ url_for('index') }}">← Volver al inicio</a>
-    <h1>Método de aproximación de Vogel</h1>
-    <p>Ingresa los costos unitarios, la oferta de cada origen y la demanda de cada destino.</p>
-    <section class="panel">
-        <form method="post">
-            <input type="hidden" id="num-origenes" name="num_origenes" value="{{ filas }}">
-            <input type="hidden" id="num-destinos" name="num_destinos" value="{{ columnas }}">
-            <div class="acciones">
-                <button class="secundario" type="button" id="agregar-origen">+ Agregar origen</button>
-                <button class="secundario" type="button" id="agregar-destino">+ Agregar destino</button>
-            </div>
-            <table id="tabla-transporte">
-                <thead>
-                    <tr id="encabezados">
-                        <th>Origen / destino</th>
-                        {% for j in range(columnas) %}<th>Destino {{ j + 1 }}</th>{% endfor %}
-                        <th>Oferta</th>
-                    </tr>
-                </thead>
-                <tbody id="origenes">
-                    {% for i in range(filas) %}
-                    <tr>
-                        <th>Origen {{ i + 1 }}</th>
-                        {% for j in range(columnas) %}
-                        <td><input type="number" step="any" min="0" required aria-label="Costo origen {{ i + 1 }} destino {{ j + 1 }}" name="costo_{{ i }}_{{ j }}" value="{{ request.form.get('costo_' ~ i ~ '_' ~ j, '') }}"></td>
-                        {% endfor %}
-                        <td><input type="number" step="any" min="0" required aria-label="Oferta origen {{ i + 1 }}" name="oferta_{{ i }}" value="{{ request.form.get('oferta_' ~ i, '') }}"></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-                <tfoot>
-                    <tr id="demandas">
-                        <th>Demanda</th>
-                        {% for j in range(columnas) %}
-                        <td><input type="number" step="any" min="0" required aria-label="Demanda destino {{ j + 1 }}" name="demanda_{{ j }}" value="{{ request.form.get('demanda_' ~ j, '') }}"></td>
-                        {% endfor %}
-                        <td>—</td>
-                    </tr>
-                </tfoot>
-            </table>
-            <button class="calcular" type="submit">Calcular solución inicial</button>
-        </form>
-    </section>
+<div class="fondo-vivo" aria-hidden="true"><i></i><i></i><i></i></div>
 
-    {% if error %}<div class="error" role="alert">{{ error }}</div>{% endif %}
+{# ── Tabla de una iteración: costos, asignaciones, oferta/demanda y penalizaciones ── #}
+{% macro tabla_iteracion(r, it) %}
+    {% set cae_f = it.eliminadas | selectattr('tipo', 'equalto', 'fila') | map(attribute='indice') | list %}
+    {% set cae_c = it.eliminadas | selectattr('tipo', 'equalto', 'columna') | map(attribute='indice') | list %}
+    {% set sel_f = it.elegido.indice if it.elegido.tipo == 'fila' else -1 %}
+    {% set sel_c = it.elegido.indice if it.elegido.tipo == 'columna' else -1 %}
+    <div class="tabla-scroll">
+    <table class="tvogel">
+        <caption class="sr">Tabla de la iteración {{ it.numero }}</caption>
+        <thead>
+            <tr>
+                <th class="esquina" scope="col">Origen \ Destino</th>
+                {% for j in range(r.destinos | length) %}
+                <th scope="col" class="{{ 'off' if not it.columnas_activas[j] }} {{ 'sel' if j == sel_c }} {{ 'cae' if j in cae_c }}">{{ r.destinos[j] }}</th>
+                {% endfor %}
+                <th scope="col" class="col-od">Oferta</th>
+                <th scope="col" class="col-pen">Penalización</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for i in range(r.origenes | length) %}
+            {% set fila_on = it.filas_activas[i] %}
+            <tr class="{{ 'off' if not fila_on }} {{ 'sel' if i == sel_f }} {{ 'cae' if i in cae_f }} {{ 'ficticio' if r.balance.ficticio == 'origen' and loop.last }}">
+                <th scope="row">{{ r.origenes[i] }}</th>
+                {% for j in range(r.destinos | length) %}
+                {% set activa = fila_on and it.columnas_activas[j] %}
+                {% set elegida = it.celda[0] == i and it.celda[1] == j %}
+                <td class="celda {{ 'off' if not activa }} {{ 'linea' if activa and (i == sel_f or j == sel_c) }} {{ 'elegida' if elegida }}">
+                    <span class="costo">{{ fmt(r.costos[i][j]) }}</span>
+                    {% if it.asignaciones[i][j] > 0 %}<b class="asig">{{ fmt(it.asignaciones[i][j]) }}</b>{% endif %}
+                </td>
+                {% endfor %}
+                <td class="od">
+                    {% if i == it.celda[0] %}<s>{{ fmt(it.oferta_antes) }}</s> {{ fmt(it.oferta_despues) }}
+                    {% else %}{{ fmt(it.oferta_disp[i]) }}{% endif %}
+                </td>
+                <td class="pen {{ 'max' if it.pen_filas[i] and it.pen_filas[i].valor == it.max_pen }} {{ 'gana' if i == sel_f }}">
+                    {{ fmt(it.pen_filas[i].valor) if it.pen_filas[i] else '—' }}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <th scope="row">Demanda</th>
+                {% for j in range(r.destinos | length) %}
+                <td class="od">
+                    {% if j == it.celda[1] %}<s>{{ fmt(it.demanda_antes) }}</s> {{ fmt(it.demanda_despues) }}
+                    {% else %}{{ fmt(it.demanda_disp[j]) }}{% endif %}
+                </td>
+                {% endfor %}
+                <td class="vacio" colspan="2"></td>
+            </tr>
+            <tr class="fila-pen">
+                <th scope="row">Penalización</th>
+                {% for j in range(r.destinos | length) %}
+                <td class="pen {{ 'max' if it.pen_cols[j] and it.pen_cols[j].valor == it.max_pen }} {{ 'gana' if j == sel_c }}">
+                    {{ fmt(it.pen_cols[j].valor) if it.pen_cols[j] else '—' }}
+                </td>
+                {% endfor %}
+                <td class="vacio" colspan="2"></td>
+            </tr>
+        </tfoot>
+    </table>
+    </div>
+    <ul class="leyenda">
+        <li><i class="ley-sel"></i>{{ 'Fila' if it.elegido.tipo == 'fila' else 'Columna' }} con la mayor penalización</li>
+        <li><i class="ley-elegida"></i>Celda asignada en esta iteración</li>
+        <li><i class="ley-cae"></i>{{ 'Fila o columna eliminada' if it.eliminadas | length == 1 else 'Fila y columna eliminadas' }} al terminar</li>
+        <li><i class="ley-off"></i>Ya eliminada antes</li>
+    </ul>
+{% endmacro %}
+
+{% macro detalle_penalizacion(p) %}
+    {% if p.unico %}
+    <li><b>{{ p.nombre }}</b>: solo queda el costo {{ fmt(p.menor) }}, así que se toma ese valor. <span class="res">P = {{ fmt(p.valor) }}</span></li>
+    {% else %}
+    <li><b>{{ p.nombre }}</b>: costos {% for c in p.costos %}{{ fmt(c) }}{{ ', ' if not loop.last }}{% endfor %}.
+        Los dos menores son {{ fmt(p.menor) }} y {{ fmt(p.segundo) }}. <span class="res">P = {{ fmt(p.segundo) }} − {{ fmt(p.menor) }} = {{ fmt(p.valor) }}</span></li>
+    {% endif %}
+{% endmacro %}
+
+{% macro mini_camion() %}
+<svg viewBox="0 0 36 24" aria-hidden="true"><g class="mini-camion">
+    <rect x="1" y="5" width="19" height="12" rx="2" fill="currentColor"/>
+    <path d="M21 9h7l5 5v3H21z" fill="currentColor"/>
+    <circle cx="8" cy="19" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>
+    <circle cx="27" cy="19" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/>
+</g></svg>
+{% endmacro %}
+
+<header class="barra">
+    <a class="volver" href="{{ url_for('index') }}"><span aria-hidden="true">←</span> Inicio</a>
+    <span class="marca"><img class="marca-emblema" src="{{ url_for('static', filename='img/usta-emblema.webp') }}" width="28" height="28" alt="" decoding="async"> OptiLab · Método de Vogel</span>
+    <button type="button" class="btn-tema" id="btn-tema" aria-label="Cambiar a modo oscuro" title="Cambiar tema">
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-sol"><circle cx="12" cy="12" r="4.2"/><g class="rayos"><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3l1.7 1.7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></g></svg>
+        <svg viewBox="0 0 24 24" aria-hidden="true" class="ic-luna"><path d="M20.2 14.6A8.4 8.4 0 0 1 9.4 3.8a8.4 8.4 0 1 0 10.8 10.8z"/></svg>
+    </button>
+    <span class="progreso-scroll" id="progreso-scroll" aria-hidden="true"></span>
+</header>
+
+<section class="hero{{ ' compacto' if resultados }}">
+    <span class="hero-brillo" aria-hidden="true"></span>
+    <div class="hero-txt">
+        <div class="hero-marca" data-in>
+            <span class="usta-tile"><img src="{{ url_for('static', filename='img/usta-logo.webp') }}" width="900" height="782" alt="Universidad Santo Tomás · Villavicencio" decoding="async" fetchpriority="high"></span>
+            <div class="hero-marca-txt">
+                <span class="etq">Proyecto académico</span>
+                <b>Optimización lineal</b>
+            </div>
+        </div>
+        <span class="eyebrow" data-in>Método de Vogel · Problemas de transporte</span>
+        <h1 class="hero-titulo" data-palabras>Distribuye al menor costo, <em>iteración por iteración</em></h1>
+        <p class="hero-sub" data-in style="--d: .3s">Describe el caso y llena la tabla de costos. Verás cada iteración con sus nueve pasos, de las penalizaciones a la asignación, y un análisis escrito con los datos de tu problema.</p>
+    </div>
+
+    <figure class="escena" id="escena" data-in style="--d: .2s">
+        <svg class="escena-svg" viewBox="0 0 560 250" role="img" aria-label="Un camión carga cajas en el origen, viaja y las descarga en el destino">
+            <defs><clipPath id="recorte-escena"><rect width="560" height="250"/></clipPath></defs>
+            <g clip-path="url(#recorte-escena)">
+                <rect class="es-cielo" width="560" height="250"/>
+                <circle class="es-sol" cx="506" cy="44" r="18"/>
+                <path class="es-nube es-n1" d="M40 40a12 12 0 0 1 22-6a10 10 0 0 1 17 7a8 8 0 0 1-2 15H44a9 9 0 0 1-4-16z"/>
+                <path class="es-nube es-n2" d="M260 28a10 10 0 0 1 18-5a8 8 0 0 1 14 6a7 7 0 0 1-2 12h-27a7 7 0 0 1-3-13z"/>
+
+                {# Pastillas que narran cada fase #}
+                <g class="es-contador es-cargando"><rect x="64" y="62" width="260" height="24" rx="12"/><text x="194" y="78">Cargando: x = mín(oferta, demanda)</text></g>
+                <g class="es-contador es-viajando"><rect x="190" y="62" width="180" height="24" rx="12"/><text x="280" y="78">En ruta hacia el destino</text></g>
+                <g class="es-contador es-descargando"><rect x="284" y="62" width="192" height="24" rx="12"/><text x="380" y="78">Descargando la demanda</text></g>
+
+                {# Suelo y vía #}
+                <rect class="es-suelo" x="0" y="202" width="560" height="48"/>
+                <path class="es-via" d="M0 226H560"/>
+
+                {# Bodega (origen) #}
+                <g class="es-bodega">
+                    <path class="es-pared" d="M14 202V118L70 90L126 118V202Z"/>
+                    <path class="es-techo" d="M8 120L70 86L132 120L126 124L70 94L14 124Z"/>
+                    <rect class="es-persiana" x="44" y="146" width="52" height="56" rx="2"/>
+                    <path class="es-linea" d="M44 156H96M44 166H96M44 176H96M44 186H96"/>
+                    <text class="es-rotulo" x="70" y="136">Origen</text>
+                </g>
+
+                {# Tienda (destino) #}
+                <g class="es-tienda">
+                    <rect class="es-pared" x="450" y="128" width="96" height="74" rx="2"/>
+                    <path class="es-toldo-a" d="M444 128H552L546 146H450Z"/>
+                    <path class="es-toldo-b" d="M462 128H480L478 146H464ZM498 128H516L515 146H500ZM534 128H552L546 146H534Z"/>
+                    <rect class="es-vidrio" x="460" y="156" width="36" height="28" rx="2"/>
+                    <rect class="es-vidrio" x="508" y="158" width="28" height="44" rx="2"/>
+                    <text class="es-rotulo" x="498" y="120">Destino</text>
+                </g>
+
+                {# Cajas: se mueven por CSS (pila del origen → camión → pila del destino) #}
+                <g class="es-caja es-c1"><rect width="22" height="20" rx="2"/><path class="cinta" d="M11 0V20"/><path d="M0 7H22"/></g>
+                <g class="es-caja es-c2"><rect width="22" height="20" rx="2"/><path class="cinta" d="M11 0V20"/><path d="M0 7H22"/></g>
+                <g class="es-caja es-c3"><rect width="22" height="20" rx="2"/><path class="cinta" d="M11 0V20"/><path d="M0 7H22"/></g>
+
+                {# Camión #}
+                <g class="es-camion">
+                    <g class="es-humo"><circle cx="-6" cy="184" r="4"/><circle cx="-6" cy="184" r="4"/><circle cx="-6" cy="184" r="4"/></g>
+                    <rect class="es-plataforma" x="0" y="170" width="84" height="10" rx="2"/>
+                    <path class="es-cabina" d="M86 182V146Q86 140 92 140H112L126 158V182Z"/>
+                    <path class="es-ventana" d="M94 146H110L119 158H94Z"/>
+                    <rect class="es-chasis" x="0" y="180" width="128" height="8" rx="3"/>
+                    <circle class="es-faro" cx="124" cy="167" r="2.6"/>
+                    <g class="es-rueda"><circle cx="22" cy="192" r="10"/><circle cx="22" cy="192" r="4.2"/><path d="M22 184V200M14 192H30"/></g>
+                    <g class="es-rueda"><circle cx="106" cy="192" r="10"/><circle cx="106" cy="192" r="4.2"/><path d="M106 184V200M98 192H114"/></g>
+                </g>
+            </g>
+        </svg>
+        <figcaption><span><b>Origen</b> con oferta</span><span>El camión toma la ruta elegida</span><span><b>Destino</b> con demanda</span></figcaption>
+    </figure>
+</section>
+
+<main class="app">
+    <form method="post" id="form-vogel" class="panel-form" novalidate>
+        <div class="encabezado-form">
+            <h2><svg class="logo-vogel" viewBox="0 0 52 34" aria-hidden="true">
+                <path class="l-via" d="M2 32H50"/>
+                <g class="l-movil">
+                    <path class="l-carga" d="M4 23V8H28V23ZM12 8V23M20 8V23"/>
+                    <path class="l-cab" d="M28 23V12H38L46 19V23Z"/>
+                    <circle class="l-rueda" cx="12" cy="26" r="3.5"/>
+                    <circle class="l-rueda" cx="38" cy="26" r="3.5"/>
+                </g>
+            </svg>Tu ejercicio</h2>
+            <p>Escribe el caso, llena costos, oferta y demanda, y resuélvelo paso a paso.</p>
+        </div>
+        <input type="hidden" id="num-origenes" name="num_origenes" value="{{ filas }}">
+        <input type="hidden" id="num-destinos" name="num_destinos" value="{{ columnas }}">
+
+        <fieldset class="bloque">
+            <legend>1 · Contexto del caso</legend>
+            <p class="ayuda">Pega el enunciado del ejercicio. Se usa para redactar el análisis del resultado con el lenguaje de tu problema.</p>
+            <textarea name="contexto" id="contexto" rows="5" maxlength="4000"
+                placeholder="Ej: Una empresa tiene tres plantas que abastecen a cuatro centros de distribución. El costo de enviar una tonelada desde cada planta a cada centro está en la tabla. ¿Cómo distribuir para minimizar el costo total?">{{ form.contexto }}</textarea>
+        </fieldset>
+
+        <fieldset class="bloque">
+            <legend>2 · Tabla de transporte</legend>
+            <p class="ayuda">Puedes renombrar cada origen y destino escribiendo sobre su nombre (por ejemplo, «Planta Bogotá» o «Tienda Centro»).</p>
+            <div class="acciones">
+                <button class="btn acento" type="button" id="agregar-origen">+ Origen</button>
+                <button class="btn" type="button" id="quitar-origen">− Origen</button>
+                <button class="btn acento" type="button" id="agregar-destino">+ Destino</button>
+                <button class="btn" type="button" id="quitar-destino">− Destino</button>
+                <span class="sep" aria-hidden="true"></span>
+                <button class="btn" type="button" id="cargar-ejemplo">Cargar ejemplo</button>
+                <button class="btn" type="button" id="limpiar">Limpiar</button>
+            </div>
+            <div class="tabla-scroll">
+                <table class="tentrada" id="tabla-entrada" data-max="{{ max_dimension }}">
+                    <thead>
+                        <tr id="encabezados">
+                            <th class="esquina">Origen \ Destino</th>
+                            {% for j in range(columnas) %}
+                            <th><input type="text" class="nombre" maxlength="40" name="nombre_destino_{{ j }}" placeholder="Destino {{ j + 1 }}" aria-label="Nombre del destino {{ j + 1 }}" value="{{ request.form.get('nombre_destino_' ~ j, '') }}"></th>
+                            {% endfor %}
+                            <th class="col-od">Oferta</th>
+                        </tr>
+                    </thead>
+                    <tbody id="origenes">
+                        {% for i in range(filas) %}
+                        <tr>
+                            <th><input type="text" class="nombre" maxlength="40" name="nombre_origen_{{ i }}" placeholder="Origen {{ i + 1 }}" aria-label="Nombre del origen {{ i + 1 }}" value="{{ request.form.get('nombre_origen_' ~ i, '') }}"></th>
+                            {% for j in range(columnas) %}
+                            <td><input type="text" inputmode="decimal" class="num-in" required aria-label="Costo origen {{ i + 1 }} destino {{ j + 1 }}" name="costo_{{ i }}_{{ j }}" value="{{ request.form.get('costo_' ~ i ~ '_' ~ j, '') }}"></td>
+                            {% endfor %}
+                            <td class="od"><input type="text" inputmode="decimal" class="num-in" required aria-label="Oferta origen {{ i + 1 }}" name="oferta_{{ i }}" value="{{ request.form.get('oferta_' ~ i, '') }}"></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr id="demandas">
+                            <th>Demanda</th>
+                            {% for j in range(columnas) %}
+                            <td class="od"><input type="text" inputmode="decimal" class="num-in" required aria-label="Demanda destino {{ j + 1 }}" name="demanda_{{ j }}" value="{{ request.form.get('demanda_' ~ j, '') }}"></td>
+                            {% endfor %}
+                            <td class="vacio"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <p class="balance-vivo" id="balance-vivo" aria-live="polite"></p>
+        </fieldset>
+
+        <fieldset class="bloque">
+            <legend>3 · Unidades <em>(opcional)</em></legend>
+            <div class="unidades">
+                <label>¿Qué se transporta?
+                    <input type="text" name="unidad_envio" maxlength="30" placeholder="toneladas, cajas, galones…" value="{{ form.unidad_envio }}"></label>
+                <label>Unidad de los valores
+                    <input type="text" name="unidad_valor" maxlength="15" placeholder="$, mil pesos, km…" value="{{ form.unidad_valor }}"></label>
+                <label>Los valores de la tabla son
+                    <select name="tipo_valor">
+                        <option value="auto" {{ 'selected' if form.tipo_valor == 'auto' }}>Detectar del enunciado</option>
+                        <option value="costo" {{ 'selected' if form.tipo_valor == 'costo' }}>Costos</option>
+                        <option value="distancia" {{ 'selected' if form.tipo_valor == 'distancia' }}>Distancias</option>
+                        <option value="tiempo" {{ 'selected' if form.tipo_valor == 'tiempo' }}>Tiempos</option>
+                    </select></label>
+            </div>
+        </fieldset>
+
+        <button class="btn-principal" type="submit">{{ mini_camion() }} Resolver paso a paso</button>
+        {% if error %}<div class="alerta" role="alert"><b>No se pudo resolver.</b> {{ error }}</div>{% endif %}
+    </form>
 
     {% if resultados %}
-    <section class="panel">
-        <h2>Solución inicial factible</h2>
-        <p><strong>Costo total de transporte:</strong> {{ resultados.costo_total }}</p>
-        {% if resultados.oferta_total != resultados.demanda_total %}
-        <p>La oferta y la demanda estaban desbalanceadas. Se agregó un {{ "origen" if resultados.oferta_total < resultados.demanda_total else "destino" }} ficticio con costo cero para balancear el problema.</p>
-        {% endif %}
-        <p class="nota">Vogel obtiene una solución inicial factible; no garantiza por sí solo que sea la solución de costo mínimo.</p>
-        <h3>Asignaciones</h3>
-        <table>
-            <thead><tr><th>Origen / destino</th>{% for destino in resultados.destinos %}<th>{{ destino }}</th>{% endfor %}</tr></thead>
-            <tbody>
-                {% for i in range(resultados.origenes|length) %}
-                <tr><th>{{ resultados.origenes[i] }}</th>
-                    {% for j in range(resultados.destinos|length) %}
-                    <td>{{ resultados.asignaciones[i][j] }}</td>
-                    {% endfor %}
-                </tr>
+    {% set r = resultados %}
+    {% set b = r.balance %}
+    {% set mejorable = r.optimalidad and not r.optimalidad.optima %}
+    <section class="resultados" id="resultados">
+
+        <div class="resumen{{ ' mejorable' if mejorable }}">
+            <span class="resumen-icono" style="color: #fff">{{ mini_camion() }}</span>
+            <div class="resumen-texto">
+                <span class="etq">{{ analisis.nombre_total[:1] | upper }}{{ analisis.nombre_total[1:] }} · solución inicial</span>
+                <strong>{{ analisis.valor_total }}</strong>
+                <span>{{ r.rutas | rejectattr('ficticia') | list | length }} rutas en {{ r.iteraciones | length }} iteraciones. {{ 'Todavía puede mejorarse con MODI.' if mejorable else 'La comprobación u-v indica que ya es óptima.' }}</span>
+            </div>
+            <button type="button" class="btn btn-imprimir" id="btn-imprimir">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 9V3h10v6M7 18H5a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M7 14h10v7H7z"/></svg>
+                Imprimir
+            </button>
+        </div>
+
+        <nav class="indice" aria-label="Recorrido de la solución">
+            <a href="#paso-balance" data-nav="paso-balance"><b>Σ</b>Balance</a>
+            {% for it in r.iteraciones %}<a href="#iter-{{ it.numero }}" data-nav="iter-{{ it.numero }}"><b>{{ it.numero }}</b>Iteración</a>{% endfor %}
+            <a href="#solucion-final" data-nav="solucion-final"><b>✓</b>Solución</a>
+            <a href="#analisis" data-nav="analisis"><b>≡</b>Análisis</a>
+        </nav>
+
+        <div class="barra-iter">
+            <button type="button" class="btn" data-todo="abrir">Expandir iteraciones</button>
+            <button type="button" class="btn" data-todo="cerrar">Contraer iteraciones</button>
+        </div>
+
+        <div class="pasos" id="pasos">
+            <i class="riel-progreso" aria-hidden="true"></i>
+
+            {# ── Paso 1 ─────────────────────────────────────────── #}
+            <article class="paso" id="paso-balance" data-paso>
+                <header class="paso-cabecera"><span class="paso-num">Σ</span><h2>Paso 1 · Verificar el balance</h2></header>
+                <div class="cuentas">
+                    <p><span class="etq">Oferta total</span><code>{{ b.suma_oferta }} = <b>{{ fmt(b.oferta_total) }}</b></code></p>
+                    <p><span class="etq">Demanda total</span><code>{{ b.suma_demanda }} = <b>{{ fmt(b.demanda_total) }}</b></code></p>
+                </div>
+                {% if b.balanceado %}
+                <p class="veredicto ok">La oferta total es igual a la demanda total ({{ fmt(b.oferta_total) }} = {{ fmt(b.demanda_total) }}). El problema está balanceado y se puede continuar.</p>
+                {% elif b.ficticio == 'origen' %}
+                <p class="veredicto aviso">La demanda supera a la oferta en {{ fmt(b.diferencia) }}. Para balancear se agrega un <b>origen ficticio</b> con oferta {{ fmt(b.diferencia) }} y costo 0 hacia todos los destinos. Lo que reciba representa demanda que no se podrá atender.</p>
+                {% else %}
+                <p class="veredicto aviso">La oferta supera a la demanda en {{ fmt(b.diferencia) }}. Para balancear se agrega un <b>destino ficticio</b> con demanda {{ fmt(b.diferencia) }} y costo 0 desde todos los orígenes. Lo que reciba representa producto que se queda sin enviar.</p>
+                {% endif %}
+                <p class="nota">Tabla con la que se inicia: {{ r.origenes | length }} fila{{ 's' if r.origenes | length != 1 }} y {{ r.destinos | length }} columna{{ 's' if r.destinos | length != 1 }}; total a repartir: {{ fmt([b.oferta_total, b.demanda_total] | max) }}.</p>
+            </article>
+
+            {# ── Iteraciones ────────────────────────────────────── #}
+            {% for it in r.iteraciones %}
+            {% set es_fila = it.elegido.tipo == 'fila' %}
+            <details class="paso iteracion" id="iter-{{ it.numero }}" data-paso open>
+                <summary>
+                    <span class="paso-num dorado">{{ it.numero }}</span>
+                    <span class="iter-titulo">Iteración {{ it.numero }}</span>
+                    <span class="iter-resumen">Mayor penalización {{ fmt(it.max_pen) }} en {{ it.elegido.nombre }}. Se asignan {{ fmt(it.cantidad) }} en {{ it.origen }} → {{ it.destino }}.</span>
+                </summary>
+                <div class="cuerpo-iter">
+                {{ tabla_iteracion(r, it) }}
+
+                <ol class="subpasos">
+                    <li class="subpaso">
+                        {% if loop.first %}
+                        <h3><span class="n">2</span> Calcular las penalizaciones</h3>
+                        <p>Para cada fila y columna se toman los dos costos más pequeños y se resta: segundo menor − menor.</p>
+                        {% else %}
+                        <h3><span class="n">8</span> Recalcular las penalizaciones</h3>
+                        <p>Con la tabla reducida (sin las filas y columnas eliminadas) se calculan de nuevo las penalizaciones. Quedan {{ it.pen_filas_lista | length }} fila{{ 's' if it.pen_filas_lista | length != 1 }} y {{ it.pen_cols_lista | length }} columna{{ 's' if it.pen_cols_lista | length != 1 }} activas.</p>
+                        {% endif %}
+                        <div class="dos-col">
+                            <div>
+                                <h4>Filas</h4>
+                                <ul class="penal">{% for p in it.pen_filas if p %}{{ detalle_penalizacion(p) }}{% endfor %}</ul>
+                            </div>
+                            <div>
+                                <h4>Columnas</h4>
+                                <ul class="penal">{% for p in it.pen_cols if p %}{{ detalle_penalizacion(p) }}{% endfor %}</ul>
+                            </div>
+                        </div>
+                    </li>
+
+                    <li class="subpaso">
+                        <h3><span class="n">3</span> Elegir la mayor penalización</h3>
+                        <p class="comparacion">
+                            Filas: {% for nombre, v in it.pen_filas_lista %}<span class="pill {{ 'max' if v == it.max_pen }}">{{ nombre }} = {{ fmt(v) }}</span>{% endfor %}<br>
+                            Columnas: {% for nombre, v in it.pen_cols_lista %}<span class="pill {{ 'max' if v == it.max_pen }}">{{ nombre }} = {{ fmt(v) }}</span>{% endfor %}
+                        </p>
+                        {% if it.ultima_celda %}
+                        <p>Solo queda una fila y una columna, así que la única celda disponible se asigna directamente: {{ 'la fila' if es_fila else 'la columna' }} <b>{{ it.elegido.nombre }}</b>, con penalización {{ fmt(it.max_pen) }}.</p>
+                        {% elif it.empatados | length > 1 %}
+                        <p>La mayor penalización es <b>{{ fmt(it.max_pen) }}</b>, pero hay empate entre {% for e in it.empatados %}{{ 'la fila' if e.tipo == 'fila' else 'la columna' }} {{ e.nombre }}{{ ', ' if loop.revindex > 2 else (' y ' if loop.revindex == 2) }}{% endfor %}.
+                            {{ it.desempate | join(' ') }}
+                            Queda seleccionada {{ 'la fila' if es_fila else 'la columna' }} <b>{{ it.elegido.nombre }}</b>.</p>
+                        {% else %}
+                        <p>La mayor penalización es <b>{{ fmt(it.max_pen) }}</b>, en {{ 'la fila' if es_fila else 'la columna' }} <b>{{ it.elegido.nombre }}</b>.</p>
+                        {% endif %}
+                    </li>
+
+                    <li class="subpaso">
+                        <h3><span class="n">4</span> Elegir la celda de menor costo</h3>
+                        <p>Dentro de {{ 'la fila' if es_fila else 'la columna' }} {{ it.elegido.nombre }}, los costos disponibles son:</p>
+                        <p class="comparacion">{% for c in it.costos_linea %}<span class="pill {{ 'elegida' if c.elegida }}">{{ c.origen }} → {{ c.destino }} = {{ fmt(c.costo) }}</span>{% endfor %}</p>
+                        <p>El menor es <b>{{ fmt(it.costo_min) }}</b>, en la celda <b>({{ it.origen }}, {{ it.destino }})</b>.{% if it.empate_celda %} Hay varias celdas con ese mismo costo; se toma la que permite asignar más unidades.{% endif %}</p>
+                    </li>
+
+                    <li class="subpaso">
+                        <h3><span class="n">5</span> Asignar la mayor cantidad posible</h3>
+                        <p class="formula">x = mín(oferta de {{ it.origen }}, demanda de {{ it.destino }}) = mín({{ fmt(it.oferta_antes) }}, {{ fmt(it.demanda_antes) }}) = <b>{{ fmt(it.cantidad) }}</b></p>
+                        <p>Se asignan {{ fmt(it.cantidad) }} {{ analisis.unidad_envio }} en la celda ({{ it.origen }}, {{ it.destino }}), con costo unitario {{ fmt(it.costo_min) }}.</p>
+                    </li>
+
+                    <li class="subpaso">
+                        <h3><span class="n">6</span> Actualizar oferta y demanda</h3>
+                        <p class="formula">Oferta de {{ it.origen }}: {{ fmt(it.oferta_antes) }} − {{ fmt(it.cantidad) }} = <b>{{ fmt(it.oferta_despues) }}</b></p>
+                        <p class="formula">Demanda de {{ it.destino }}: {{ fmt(it.demanda_antes) }} − {{ fmt(it.cantidad) }} = <b>{{ fmt(it.demanda_despues) }}</b></p>
+                    </li>
+
+                    <li class="subpaso">
+                        <h3><span class="n">7</span> Eliminar la fila o columna satisfecha</h3>
+                        {% if it.eliminadas | length == 2 %}
+                        <p>La oferta de {{ it.origen }} y la demanda de {{ it.destino }} llegan a cero al mismo tiempo, así que se eliminan <b>la fila {{ it.origen }}</b> y <b>la columna {{ it.destino }}</b>.
+                            {% if it.filas_restantes and it.columnas_restantes %}Eliminar las dos a la vez deja la solución con menos celdas ocupadas de las necesarias (degenerada); se tendrá en cuenta al final.{% endif %}</p>
+                        {% else %}
+                        {% set e = it.eliminadas[0] %}
+                        <p>{{ 'La oferta de' if e.tipo == 'fila' else 'La demanda de' }} {{ e.nombre }} llegó a cero, así que se elimina <b>{{ 'la fila' if e.tipo == 'fila' else 'la columna' }} {{ e.nombre }}</b>.
+                            {{ 'La demanda de ' ~ it.destino ~ ' sigue pendiente con ' ~ fmt(it.demanda_despues) ~ '.' if e.tipo == 'fila' else 'La oferta de ' ~ it.origen ~ ' sigue disponible con ' ~ fmt(it.oferta_despues) ~ '.' }}</p>
+                        {% endif %}
+                    </li>
+
+                    <li class="subpaso control">
+                        <h3><span class="n">9</span> ¿Se repite?</h3>
+                        {% if it.filas_restantes and it.columnas_restantes %}
+                        <p>Quedan {{ fmt(it.oferta_pendiente) }} por enviar en {{ it.filas_restantes }} fila{{ 's' if it.filas_restantes != 1 }} y {{ fmt(it.demanda_pendiente) }} por recibir en {{ it.columnas_restantes }} columna{{ 's' if it.columnas_restantes != 1 }}. Se repiten los pasos 2 a 8 en la <a href="#iter-{{ it.numero + 1 }}">iteración {{ it.numero + 1 }}</a>.</p>
+                        {% else %}
+                        <p>Todas las ofertas y demandas quedaron satisfechas. El método termina aquí, después de {{ it.numero }} iteracion{{ 'es' if it.numero != 1 }}.</p>
+                        {% endif %}
+                    </li>
+                </ol>
+                </div>
+            </details>
+            {% endfor %}
+
+            {# ── Solución final ─────────────────────────────────── #}
+            <article class="paso" id="solucion-final" data-paso>
+                <header class="paso-cabecera"><span class="paso-num verde">✓</span><h2>Solución inicial factible</h2></header>
+                <div class="tabla-scroll">
+                    <table class="tvogel final">
+                        <caption class="sr">Asignaciones finales</caption>
+                        <thead><tr>
+                            <th class="esquina" scope="col">Origen \ Destino</th>
+                            {% for d in r.destinos %}<th scope="col">{{ d }}</th>{% endfor %}
+                            <th scope="col" class="col-od">Oferta</th>
+                        </tr></thead>
+                        <tbody>
+                            {% for i in range(r.origenes | length) %}
+                            <tr class="{{ 'ficticio' if b.ficticio == 'origen' and loop.last }}">
+                                <th scope="row">{{ r.origenes[i] }}</th>
+                                {% for j in range(r.destinos | length) %}
+                                <td class="celda {{ 'ocupada' if r.asignaciones[i][j] > 0 }}">
+                                    <span class="costo">{{ fmt(r.costos[i][j]) }}</span>
+                                    {% if r.asignaciones[i][j] > 0 %}<b class="asig">{{ fmt(r.asignaciones[i][j]) }}</b>{% endif %}
+                                </td>
+                                {% endfor %}
+                                <td class="od">{{ fmt(r.oferta[i]) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot><tr>
+                            <th scope="row">Demanda</th>
+                            {% for j in range(r.destinos | length) %}<td class="od">{{ fmt(r.demanda[j]) }}</td>{% endfor %}
+                            <td class="vacio"></td>
+                        </tr></tfoot>
+                    </table>
+                </div>
+                <p class="formula total">Z = {{ r.calculo_total }} = <b>{{ fmt(r.costo_total) }}</b></p>
+                <div class="tabla-scroll">
+                    <table class="trutas">
+                        <thead><tr><th scope="col">Ruta</th><th scope="col">Cantidad</th><th scope="col">Costo unitario</th><th scope="col">Subtotal</th></tr></thead>
+                        <tbody>
+                            {% for ruta in r.rutas %}
+                            <tr class="{{ 'ficticio' if ruta.ficticia }}">
+                                <td>{{ ruta.origen }} → {{ ruta.destino }}</td>
+                                <td>{{ fmt(ruta.cantidad) }}</td>
+                                <td>{{ fmt(ruta.costo) }}</td>
+                                <td>{{ fmt(ruta.subtotal) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot><tr><th scope="row" colspan="3">Total</th><td><b>{{ fmt(r.costo_total) }}</b></td></tr></tfoot>
+                    </table>
+                </div>
+                <p class="nota">Vogel entrega una solución inicial factible, normalmente muy cercana al óptimo, pero no garantiza por sí solo el costo mínimo. Para comprobarlo se usa el método MODI (u-v) o el de banquillo (stepping stone).</p>
+            </article>
+
+            {# ── Análisis ───────────────────────────────────────── #}
+            <article class="paso" id="analisis" data-paso>
+                <header class="paso-cabecera"><span class="paso-num dorado">≡</span><h2>Análisis del resultado</h2></header>
+                {% if form.contexto %}
+                <blockquote class="enunciado"><span class="etq">Caso planteado</span>{{ form.contexto }}</blockquote>
+                {% else %}
+                <p class="sin-contexto">No escribiste el contexto del caso, así que el análisis usa nombres genéricos. Pega el enunciado en el bloque 1 y renombra orígenes y destinos para leerlo en términos de tu problema.</p>
+                {% endif %}
+                <div class="respuesta"><span class="etq">En pocas palabras</span><p>{{ analisis.resumen }}</p></div>
+                {% for bloque in analisis.bloques %}
+                <section class="bloque-analisis {{ bloque.tipo }}">
+                    <h3>{{ bloque.titulo }}</h3>
+                    {% if bloque.tipo == 'plan' %}
+                    <ul>{% for p in bloque.parrafos %}<li>{{ p }}</li>{% endfor %}</ul>
+                    {% else %}
+                    {% for p in bloque.parrafos %}<p>{{ p }}</p>{% endfor %}
+                    {% endif %}
+                </section>
                 {% endfor %}
-            </tbody>
-        </table>
-        <h3>Iteraciones del método</h3>
-        <table class="pasos">
-            <thead><tr><th>Paso</th><th>Selección</th><th>Celda asignada</th><th>Unidades</th><th>Costo unitario</th></tr></thead>
-            <tbody>
-                {% for paso in resultados.pasos %}
-                <tr>
-                    <td>{{ paso.numero }}</td>
-                    <td>{{ "Origen" if paso.tipo == "origen" else "Destino" }} {{ paso.indice }}</td>
-                    <td>{{ paso.origen }} → {{ paso.destino }}</td>
-                    <td>{{ paso.cantidad }}</td>
-                    <td>{{ paso.costo_unitario }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+            </article>
+        </div>
+
+        <section class="cg" data-in>
+            <canvas class="cg-red" aria-hidden="true" data-red='{{ red | tojson }}'></canvas>
+            <div class="cg-copy">
+                <span class="eyebrow">¿Otro caso?</span>
+                <h2 class="cg-titulo">Otra tabla,<br>otras rutas</h2>
+                <a class="btn-cg" href="{{ url_for('vogel_bp.vista_principal') }}?nuevo=1">Resolver otro ejercicio <span aria-hidden="true">→</span></a>
+            </div>
+        </section>
     </section>
     {% endif %}
 </main>
+
+<footer class="pie">
+    <div class="pie-in">
+        <span class="usta-tile pequeno"><img src="{{ url_for('static', filename='img/usta-logo.webp') }}" width="900" height="782" alt="Universidad Santo Tomás · Villavicencio" loading="lazy" decoding="async"></span>
+        <p><b>Universidad Santo Tomás · Villavicencio</b><br>Proyecto académico de Optimización. Herramienta educativa para aprender el método de aproximación de Vogel paso a paso.</p>
+    </div>
+</footer>
+<button type="button" class="btn-arriba" id="btn-arriba" aria-label="Volver arriba">↑</button>
+
 <script>
-    const limite = {{ max_dimension }};
-    const origenes = document.getElementById('origenes');
-    const encabezados = document.getElementById('encabezados');
-    const demandas = document.getElementById('demandas');
-    const numeroOrigenes = document.getElementById('num-origenes');
-    const numeroDestinos = document.getElementById('num-destinos');
-
-    document.getElementById('agregar-origen').addEventListener('click', () => {
-        const i = Number(numeroOrigenes.value);
-        const jTotal = Number(numeroDestinos.value);
-        if (i >= limite) return;
-        const fila = document.createElement('tr');
-        fila.innerHTML = `<th>Origen ${i + 1}</th>${Array.from({length: jTotal}, (_, j) => `<td><input type="number" step="any" min="0" required aria-label="Costo origen ${i + 1} destino ${j + 1}" name="costo_${i}_${j}"></td>`).join('')}<td><input type="number" step="any" min="0" required aria-label="Oferta origen ${i + 1}" name="oferta_${i}"></td>`;
-        origenes.appendChild(fila);
-        numeroOrigenes.value = i + 1;
-        encabezados.cells[0].textContent = 'Origen / destino';
-    });
-
-    document.getElementById('agregar-destino').addEventListener('click', () => {
-        const j = Number(numeroDestinos.value);
-        const iTotal = Number(numeroOrigenes.value);
-        if (j >= limite) return;
-        const encabezado = document.createElement('th');
-        encabezado.textContent = `Destino ${j + 1}`;
-        encabezados.insertBefore(encabezado, encabezados.lastElementChild);
-        Array.from(origenes.rows).forEach((fila, i) => {
-            const celda = document.createElement('td');
-            celda.innerHTML = `<input type="number" step="any" min="0" required aria-label="Costo origen ${i + 1} destino ${j + 1}" name="costo_${i}_${j}">`;
-            fila.insertBefore(celda, fila.lastElementChild);
-        });
-        const demanda = document.createElement('td');
-        demanda.innerHTML = `<input type="number" step="any" min="0" required aria-label="Demanda destino ${j + 1}" name="demanda_${j}">`;
-        demandas.insertBefore(demanda, demandas.lastElementChild);
-        numeroDestinos.value = j + 1;
-    });
+    window.VOGEL_EJEMPLO = {
+        contexto: 'Una empresa de alimentos tiene tres plantas de producción (Bogotá, Medellín y Cali) con capacidades de 7, 9 y 18 toneladas por semana. Debe abastecer cuatro centros de distribución (Villavicencio, Tunja, Ibagué y Neiva) que requieren 5, 8, 7 y 14 toneladas. El costo de enviar una tonelada desde cada planta a cada centro, en miles de pesos, está en la tabla. ¿Cómo debe distribuir para minimizar el costo total de transporte?',
+        origenes: ['Planta Bogotá', 'Planta Medellín', 'Planta Cali'],
+        destinos: ['Villavicencio', 'Tunja', 'Ibagué', 'Neiva'],
+        costos: [[19, 30, 50, 10], [70, 30, 40, 60], [40, 8, 70, 20]],
+        oferta: [7, 9, 18],
+        demanda: [5, 8, 7, 14],
+        unidadEnvio: 'toneladas',
+        unidadValor: 'mil pesos'
+    };
 </script>
+<script src="{{ url_for('static', filename='js/vogel.js') }}" defer></script>
 </body>
 </html>
