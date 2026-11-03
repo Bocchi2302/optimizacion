@@ -747,10 +747,18 @@ a {
     padding-inline: 0;
 }
 
-.vista-previa {
+.previa-y-mapa {
+    display: grid;
+    gap: var(--esp-4);
     margin-top: var(--esp-4);
     padding-top: var(--esp-3);
     border-top: 1px solid var(--linea);
+}
+
+@media (min-width: 720px) {
+    .previa-y-mapa {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+    }
 }
 
 .vista-previa h3 {
@@ -1607,4 +1615,171 @@ html {
     .paso[data-estado="no-acotado"] {
         padding: var(--esp-3);
     }
+}
+
+/* ── Mapa de la región factible ─────────────────────── */
+.mapa {
+    min-width: 0;
+    margin: 0;
+}
+
+.mapa svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--linea);
+    border-radius: var(--radio-m);
+    background: var(--fondo);
+}
+
+.mapa figcaption {
+    margin-top: var(--esp-2);
+    color: var(--pizarra-honda);
+}
+
+.mapa-rejilla line {
+    stroke: var(--linea);
+    stroke-width: 1;
+}
+
+.mapa-rejilla text,
+.mapa-nombre {
+    fill: var(--pizarra-honda);
+    font-size: 11px;
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.mapa-nombre {
+    fill: var(--tinta);
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.mapa-eje {
+    stroke: var(--linea-fuerte);
+    stroke-width: 1.5;
+}
+
+.mapa-region {
+    fill: var(--dorado);
+    fill-opacity: 0.2;
+    stroke: var(--dorado);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.mapa-recta line {
+    stroke: var(--pizarra);
+    stroke-width: 1.5;
+    transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+
+.mapa-recta text {
+    fill: var(--pizarra-honda);
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.mapa-recta.activa line {
+    stroke: var(--vino-m);
+    stroke-width: 3;
+}
+
+.mapa-recta.activa text {
+    fill: var(--vino-m);
+}
+
+.mapa-iso {
+    stroke: var(--columna-pivote-regla);
+    stroke-width: 1.5;
+    stroke-dasharray: 5 5;
+}
+
+.mapa-estela {
+    fill: none;
+    stroke: var(--tinta);
+    stroke-width: 2;
+    stroke-linejoin: round;
+}
+
+.mapa-nodo {
+    cursor: pointer;
+}
+
+.mapa-nodo-area {
+    fill: transparent;
+}
+
+.mapa-nodo-punto {
+    fill: var(--tinta);
+}
+
+.mapa-nodo:hover .mapa-nodo-punto {
+    fill: var(--dorado);
+}
+
+.mapa-nodo:focus-visible {
+    outline: none;
+}
+
+.mapa-nodo:focus-visible .mapa-nodo-area {
+    stroke: var(--tinta);
+    stroke-width: 2;
+}
+
+/* El punto camina entre pasos; fuera de la región se ve hueco y en color de M */
+.mapa-actual {
+    pointer-events: none;
+    transition: transform 0.7s cubic-bezier(0.3, 0.7, 0.2, 1);
+}
+
+.mapa-actual-halo {
+    fill: var(--dorado);
+    fill-opacity: 0.3;
+    animation: latido 1.8s ease-in-out infinite;
+    transform-box: fill-box;
+    transform-origin: center;
+}
+
+.mapa-actual-punto {
+    fill: var(--dorado);
+    stroke: var(--sobre-acento);
+    stroke-width: 2;
+}
+
+.mapa-actual.fuera .mapa-actual-halo {
+    fill: var(--vino-m);
+}
+
+.mapa-actual.fuera .mapa-actual-punto {
+    fill: var(--fondo);
+    stroke: var(--vino-m);
+    stroke-width: 3;
+}
+
+@keyframes latido {
+    50% { transform: scale(1.35); fill-opacity: 0.12; }
+}
+
+/* En el visor el mapa acompaña la explicación */
+.paso-rejilla {
+    display: grid;
+    gap: var(--esp-4);
+}
+
+.paso-texto {
+    min-width: 0;
+}
+
+@media (min-width: 900px) {
+    .paso-rejilla:has(.mapa:not([hidden])) {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 24rem);
+        align-items: start;
+    }
+}
+
+.paso[data-estado="no-factible"] .mapa-recta line,
+.paso[data-estado="no-acotado"] .mapa-recta line {
+    stroke: var(--pizarra-honda);
 }

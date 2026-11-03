@@ -131,6 +131,233 @@
         return `${valor < 0 ? '-' : ''}${magnitudTex(campo.value)}`;
     }
 
+    // ── Mapa de la región factible (solo con 2 variables) ───────────────────────
+    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const MAPA = { ancho: 360, alto: 320, izquierda: 38, derecha: 14, arriba: 14, abajo: 34 };
+
+    function elementoSvg(etiqueta, atributos, padre) {
+        const elemento = document.createElementNS(SVG_NS, etiqueta);
+        Object.keys(atributos).forEach(function (clave) {
+            elemento.setAttribute(clave, atributos[clave]);
+        });
+        if (padre) {
+            padre.appendChild(elemento);
+        }
+        return elemento;
+    }
+
+    // Lee el modelo del formulario; las filas incompletas no se dibujan todavía
+    function leerModelo() {
+        const form = document.getElementById('form-modelo');
+        if (!form) {
+            return null;
+        }
+        const nombres = Array.from(form.querySelectorAll('input[name="nombres[]"]')).map(function (campo) {
+            return campo.value;
+        });
+        if (nombres.length !== 2) {
+            return null;
+        }
+        const camposZ = Array.from(form.querySelectorAll('input[name="z[]"]'));
+        const restricciones = [];
+        form.querySelectorAll('[data-restriccion]:not(.saliendo)').forEach(function (fila, i) {
+            const a = Array.from(fila.querySelectorAll('input[name="a[]"]')).map(function (campo) {
+                return leerNumero(campo.value);
+            });
+            const b = leerNumero(fila.querySelector('input[name="b[]"]').value);
+            if (a.includes(null) || b === null || (a[0] === 0 && a[1] === 0)) {
+                return;
+            }
+            restricciones.push({ numero: i + 1, a: a, b: b, op: fila.querySelector('select[name="op[]"]').value });
+        });
+        return {
+            nombres: nombres,
+            visibles: camposZ.map(function (campo) { return campo.dataset.visible; }),
+            c: camposZ.map(function (campo) { return leerNumero(campo.value); }),
+            restricciones: restricciones
+        };
+    }
+
+    // Una restricción como desigualdades "a·x ≤ b"; la igualdad aporta las dos caras
+    function semiplanos(restriccion) {
+        const a = restriccion.a;
+        const b = restriccion.b;
+        if (restriccion.op === '<=') {
+            return [{ a: a, b: b }];
+        }
+        const opuesto = { a: [-a[0], -a[1]], b: -b };
+        return restriccion.op === '>=' ? [opuesto] : [{ a: a, b: b }, opuesto];
+    }
+
+    // Recorte Sutherland-Hodgman del polígono contra un semiplano
+    function recortar(poligono, semiplano) {
+        const salida = [];
+        const holgura = 1e-9;
+        function valor(punto) {
+            return semiplano.a[0] * punto[0] + semiplano.a[1] * punto[1] - semiplano.b;
+        }
+        poligono.forEach(function (actual, i) {
+            const siguiente = poligono[(i + 1) % poligono.length];
+            const va = valor(actual);
+            const vs = valor(siguiente);
+            if (va <= holgura) {
+                salida.push(actual);
+            }
+            if ((va < -holgura && vs > holgura) || (va > holgura && vs < -holgura)) {
+                const t = va / (va - vs);
+                salida.push([actual[0] + t * (siguiente[0] - actual[0]), actual[1] + t * (siguiente[1] - actual[1])]);
+            }
+        });
+        return salida;
+    }
+
+    function regionFactible(modelo, maxX, maxY) {
+        let poligono = [[0, 0], [maxX, 0], [maxX, maxY], [0, maxY]];
+        modelo.restricciones.forEach(function (restriccion) {
+            semiplanos(restriccion).forEach(function (semiplano) {
+                if (poligono.length > 0) {
+                    poligono = recortar(poligono, semiplano);
+                }
+            });
+        });
+        return poligono;
+    }
+
+    function dentroDelModelo(modelo, punto) {
+        return modelo.restricciones.every(function (restriccion) {
+            return semiplanos(restriccion).every(function (semiplano) {
+                return semiplano.a[0] * punto.x + semiplano.a[1] * punto.y <= semiplano.b + 1e-7;
+            });
+        });
+    }
+
+    // Extremos de la recta a·x = b dentro del rectángulo visible
+    function extremosDeRecta(a, b, maxX, maxY) {
+        const puntos = [];
+        function agregar(x, y) {
+            const dentro = x >= -1e-9 && x <= maxX + 1e-9 && y >= -1e-9 && y <= maxY + 1e-9;
+            const repetido = puntos.some(function (p) {
+                return Math.abs(p[0] - x) < 1e-7 && Math.abs(p[1] - y) < 1e-7;
+            });
+            if (dentro && !repetido) {
+                puntos.push([x, y]);
+            }
+        }
+        if (a[1] !== 0) {
+            agregar(0, b / a[1]);
+            agregar(maxX, (b - a[0] * maxX) / a[1]);
+        }
+        if (a[0] !== 0) {
+            agregar(b / a[0], 0);
+            agregar((b - a[1] * maxY) / a[0], maxY);
+        }
+        return puntos.length >= 2 ? puntos.slice(0, 2) : null;
+    }
+
+    function pasoDeEje(maximo) {
+        const bruto = maximo / 5;
+        const potencia = Math.pow(10, Math.floor(Math.log10(bruto)));
+        const fraccion = bruto / potencia;
+        const multiplo = fraccion <= 1 ? 1 : fraccion <= 2 ? 2 : fraccion <= 5 ? 5 : 10;
+        return multiplo * potencia;
+    }
+
+    function limitesDelMapa(modelo, puntos) {
+        const xs = [];
+        const ys = [];
+        modelo.restricciones.forEach(function (r) {
+            if (r.a[0] !== 0 && r.b / r.a[0] > 0) {
+                xs.push(r.b / r.a[0]);
+            }
+            if (r.a[1] !== 0 && r.b / r.a[1] > 0) {
+                ys.push(r.b / r.a[1]);
+            }
+        });
+        puntos.forEach(function (p) {
+            xs.push(p.x);
+            ys.push(p.y);
+        });
+        return {
+            x: (Math.max(0, ...xs) || 10) * 1.15,
+            y: (Math.max(0, ...ys) || 10) * 1.15
+        };
+    }
+
+    // Dibuja ejes, rectas y región. Devuelve las escalas para colocar puntos encima.
+    function dibujarBaseMapa(svg, modelo, puntos) {
+        svg.replaceChildren();
+        const limites = limitesDelMapa(modelo, puntos);
+        const anchoUtil = MAPA.ancho - MAPA.izquierda - MAPA.derecha;
+        const altoUtil = MAPA.alto - MAPA.arriba - MAPA.abajo;
+
+        function aX(x) {
+            return MAPA.izquierda + (x / limites.x) * anchoUtil;
+        }
+        function aY(y) {
+            return MAPA.arriba + altoUtil - (y / limites.y) * altoUtil;
+        }
+
+        const rejilla = elementoSvg('g', { class: 'mapa-rejilla' }, svg);
+        const pasoX = pasoDeEje(limites.x);
+        const pasoY = pasoDeEje(limites.y);
+        for (let x = 0; x <= limites.x; x += pasoX) {
+            elementoSvg('line', { x1: aX(x), x2: aX(x), y1: aY(0), y2: aY(limites.y) }, rejilla);
+            const texto = elementoSvg('text', { x: aX(x), y: aY(0) + 15, 'text-anchor': 'middle' }, rejilla);
+            texto.textContent = Number(x.toFixed(4));
+        }
+        for (let y = 0; y <= limites.y; y += pasoY) {
+            elementoSvg('line', { x1: aX(0), x2: aX(limites.x), y1: aY(y), y2: aY(y) }, rejilla);
+            const texto = elementoSvg('text', { x: aX(0) - 6, y: aY(y) + 4, 'text-anchor': 'end' }, rejilla);
+            texto.textContent = Number(y.toFixed(4));
+        }
+        elementoSvg('line', { class: 'mapa-eje', x1: aX(0), x2: aX(limites.x), y1: aY(0), y2: aY(0) }, svg);
+        elementoSvg('line', { class: 'mapa-eje', x1: aX(0), x2: aX(0), y1: aY(0), y2: aY(limites.y) }, svg);
+        const nombreX = elementoSvg('text', { class: 'mapa-nombre', x: aX(limites.x), y: MAPA.alto - 4, 'text-anchor': 'end' }, svg);
+        nombreX.textContent = modelo.visibles[0];
+        const nombreY = elementoSvg('text', { class: 'mapa-nombre', x: 4, y: aY(limites.y) + 10 }, svg);
+        nombreY.textContent = modelo.visibles[1];
+
+        const region = regionFactible(modelo, limites.x, limites.y);
+        if (region.length > 0) {
+            elementoSvg('polygon', {
+                class: 'mapa-region',
+                points: region.map(function (p) { return `${aX(p[0])},${aY(p[1])}`; }).join(' ')
+            }, svg);
+        }
+
+        modelo.restricciones.forEach(function (restriccion) {
+            const extremos = extremosDeRecta(restriccion.a, restriccion.b, limites.x, limites.y);
+            if (!extremos) {
+                return;
+            }
+            const grupo = elementoSvg('g', { class: 'mapa-recta', 'data-restriccion-mapa': restriccion.numero }, svg);
+            const coordenadas = { x1: aX(extremos[0][0]), y1: aY(extremos[0][1]), x2: aX(extremos[1][0]), y2: aY(extremos[1][1]) };
+            elementoSvg('line', coordenadas, grupo);
+            const rotulo = elementoSvg('text', {
+                x: (coordenadas.x1 + coordenadas.x2) / 2 + 4,
+                y: (coordenadas.y1 + coordenadas.y2) / 2 - 4
+            }, grupo);
+            rotulo.textContent = `R${restriccion.numero}`;
+        });
+
+        return { aX: aX, aY: aY, limites: limites, regionVacia: region.length === 0 };
+    }
+
+    function resaltarRecta(svg, numero) {
+        svg.querySelectorAll('.mapa-recta').forEach(function (recta) {
+            recta.classList.toggle('activa', recta.dataset.restriccionMapa === String(numero));
+        });
+    }
+
+    function textoRegion(modelo, regionVacia) {
+        if (modelo.restricciones.length === 0) {
+            return 'Completa una restricción para ver la región.';
+        }
+        return regionVacia
+            ? 'Las restricciones no tienen puntos en común: no hay región factible.'
+            : 'La zona dorada cumple todas las restricciones.';
+    }
+
     // ── Formulario ───────────────────────────────────────────────────────────────
     function iniciarFormulario() {
         const formEnunciado = document.getElementById('form-enunciado');
@@ -346,6 +573,17 @@
             }
         }
 
+        function actualizarMapa() {
+            const figura = document.getElementById('mapa-modelo');
+            const modelo = leerModelo();
+            figura.hidden = !modelo;
+            if (modelo) {
+                const svg = figura.querySelector('svg');
+                const base = dibujarBaseMapa(svg, modelo, []);
+                figura.querySelector('figcaption').textContent = textoRegion(modelo, base.regionVacia);
+            }
+        }
+
         function actualizar() {
             const lista = filas();
             lista.forEach(function (fila, i) {
@@ -354,6 +592,7 @@
             });
             marcarArtificiales();
             actualizarVistaPrevia();
+            actualizarMapa();
         }
 
         function programarActualizacion() {
@@ -454,6 +693,20 @@
             estadoEnvio.textContent = '';
             document.getElementById('contexto-oculto').value = campoContexto.value;
             bloquearEnvio(form, evento.submitter, 'Calculando…');
+        });
+
+        // Señalar o editar una restricción enciende su recta en el mapa
+        function encenderRecta(evento) {
+            const fila = evento.target.closest('[data-restriccion]');
+            if (fila) {
+                resaltarRecta(document.querySelector('#mapa-modelo svg'), filas().indexOf(fila) + 1);
+            }
+        }
+
+        contenedor.addEventListener('mouseover', encenderRecta);
+        contenedor.addEventListener('focusin', encenderRecta);
+        contenedor.addEventListener('mouseleave', function () {
+            resaltarRecta(document.querySelector('#mapa-modelo svg'), null);
         });
 
         // ── Agregar y eliminar restricciones ─────────────────────────────────────
@@ -600,6 +853,7 @@
 
         let indiceActual = 0;
         let vista = 'juntas';
+        let moverEnMapa = null;
 
         // Datos derivados de cada paso, sin tocar el contrato del solver
         const tablaInicial = pasos.find(function (paso) { return paso.tabla; }).tabla;
@@ -809,6 +1063,100 @@
                 texto += ` Sale ${d.salen.join(' y ')}. Artificiales en la base: ${d.artificialesEnBase.length}.`;
             }
             elementos.anuncio.textContent = texto;
+        }
+
+        // ── Recorrido del método sobre el mapa ──────────────────────────────────
+        function puntoDelPaso(paso) {
+            const tabla = paso.tabla_resultado || paso.tabla || tablaInicial;
+            function valor(nombre) {
+                const fila = tabla.filas.find(function (f) { return f.base === nombre; });
+                return fila ? Number(fila.celdas[fila.celdas.length - 1]) : 0;
+            }
+            return { x: valor(tablaInicial.columnas[1]), y: valor(tablaInicial.columnas[2]) };
+        }
+
+        function iniciarRecorrido() {
+            const figura = document.getElementById('mapa-visor');
+            const modelo = leerModelo();
+            if (!modelo || modelo.c.includes(null)) {
+                return null;
+            }
+            figura.hidden = false;
+            const svg = figura.querySelector('svg');
+            const nota = figura.querySelector('figcaption');
+            const puntos = pasos.map(puntoDelPaso);
+            const base = dibujarBaseMapa(svg, modelo, puntos);
+            const aX = base.aX;
+            const aY = base.aY;
+
+            const isoZ = elementoSvg('line', { class: 'mapa-iso' }, svg);
+            const estela = elementoSvg('polyline', { class: 'mapa-estela' }, svg);
+
+            // Un nodo por punto distinto: clic o Intro llevan al primer paso que lo visita
+            const nodos = [];
+            puntos.forEach(function (punto, i) {
+                const clave = `${punto.x}|${punto.y}`;
+                if (nodos.some(function (n) { return n.clave === clave; })) {
+                    return;
+                }
+                const nodo = elementoSvg('g', {
+                    class: 'mapa-nodo',
+                    role: 'button',
+                    tabindex: '0',
+                    transform: `translate(${aX(punto.x)} ${aY(punto.y)})`,
+                    'aria-label': `Ir al paso ${i + 1}: ${modelo.visibles[0]} = ${Number(punto.x.toFixed(4))}, ${modelo.visibles[1]} = ${Number(punto.y.toFixed(4))}`
+                }, svg);
+                elementoSvg('circle', { class: 'mapa-nodo-area', r: 22 }, nodo);
+                elementoSvg('circle', { class: 'mapa-nodo-punto', r: 4 }, nodo);
+                nodo.addEventListener('click', function () { irA(i); });
+                nodo.addEventListener('keydown', function (evento) {
+                    if (evento.key === 'Enter' || evento.key === ' ') {
+                        evento.preventDefault();
+                        irA(i);
+                    }
+                });
+                nodos.push({ clave: clave, elemento: nodo });
+            });
+
+            const marcador = elementoSvg('g', { class: 'mapa-actual' }, svg);
+            elementoSvg('circle', { class: 'mapa-actual-halo', r: 13 }, marcador);
+            elementoSvg('circle', { class: 'mapa-actual-punto', r: 7 }, marcador);
+
+            function dibujarIso(punto) {
+                const z = modelo.c[0] * punto.x + modelo.c[1] * punto.y;
+                const extremos = (modelo.c[0] !== 0 || modelo.c[1] !== 0)
+                    ? extremosDeRecta(modelo.c, z, base.limites.x, base.limites.y)
+                    : null;
+                isoZ.style.display = extremos ? '' : 'none';
+                if (extremos) {
+                    isoZ.setAttribute('x1', aX(extremos[0][0]));
+                    isoZ.setAttribute('y1', aY(extremos[0][1]));
+                    isoZ.setAttribute('x2', aX(extremos[1][0]));
+                    isoZ.setAttribute('y2', aY(extremos[1][1]));
+                }
+            }
+
+            return function mover(indice, estado) {
+                const punto = puntos[indice];
+                const dentro = dentroDelModelo(modelo, punto);
+                marcador.style.transform = `translate(${aX(punto.x)}px, ${aY(punto.y)}px)`;
+                marcador.classList.toggle('fuera', !dentro);
+                dibujarIso(punto);
+                estela.setAttribute('points', puntos.slice(0, indice + 1).map(function (p) {
+                    return `${aX(p.x)},${aY(p.y)}`;
+                }).join(' '));
+
+                const posicion = `${modelo.visibles[0]} = ${Number(punto.x.toFixed(4))}, ${modelo.visibles[1]} = ${Number(punto.y.toFixed(4))}`;
+                let lectura = dentro
+                    ? 'dentro de la región factible.'
+                    : 'fuera de la región: por eso el método necesita las artificiales.';
+                if (estado === 'no-factible') {
+                    lectura = 'no hay región factible: el método se detuvo aquí.';
+                } else if (estado === 'no-acotado') {
+                    lectura = 'la región sigue sin límite en esa dirección.';
+                }
+                nota.textContent = `Punto actual: ${posicion}, ${lectura}`;
+            };
         }
 
         function aMenos(texto) {
@@ -1212,6 +1560,9 @@
             actualizarFases();
             actualizarContador(opciones.animar);
             marcarPenalizacion(derivados[indiceActual].artificialesEnBase.length);
+            if (moverEnMapa) {
+                moverEnMapa(indiceActual, estado);
+            }
 
             elementos.explicacion.innerHTML = resaltarTerminosM(acortarDecimales(paso.explicacion));
 
@@ -1306,6 +1657,7 @@
             irA(destinos[evento.key]);
         });
 
+        moverEnMapa = iniciarRecorrido();
         mostrarPaso({ foco: true, animar: false });
     }
 

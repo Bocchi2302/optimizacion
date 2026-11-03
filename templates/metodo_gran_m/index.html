@@ -164,9 +164,15 @@
                     <button type="button" class="btn btn-sutil" id="btn-agregar-restriccion">Agregar restricción</button>
                 </fieldset>
 
-                <div class="vista-previa">
-                    <h3>Así queda el modelo</h3>
-                    <div id="vista-previa"></div>
+                <div class="previa-y-mapa">
+                    <div class="vista-previa">
+                        <h3>Así queda el modelo</h3>
+                        <div id="vista-previa"></div>
+                    </div>
+                    <figure class="mapa" id="mapa-modelo" hidden>
+                        <svg viewBox="0 0 360 320" role="img" aria-label="Región factible del modelo"></svg>
+                        <figcaption class="nota"></figcaption>
+                    </figure>
                 </div>
 
                 <p class="estado-envio" id="estado-envio" role="status"></p>
@@ -204,11 +210,19 @@
             <div class="solo-lector" id="anuncio" aria-live="polite" aria-atomic="true"></div>
 
             <div class="paso" id="paso">
-                <h3 id="titulo-paso" tabindex="-1"></h3>
-                <p class="hechos" id="hechos-paso" hidden></p>
-                <div class="resumen-resultado" id="resumen-resultado" hidden></div>
-                <div id="explicacion" class="explicacion"></div>
-                <div id="formulas" class="formulas"></div>
+                <div class="paso-rejilla">
+                    <div class="paso-texto">
+                        <h3 id="titulo-paso" tabindex="-1"></h3>
+                        <p class="hechos" id="hechos-paso" hidden></p>
+                        <div class="resumen-resultado" id="resumen-resultado" hidden></div>
+                        <div id="explicacion" class="explicacion"></div>
+                        <div id="formulas" class="formulas"></div>
+                    </div>
+                    <figure class="mapa" id="mapa-visor" hidden>
+                        <svg viewBox="0 0 360 320" aria-label="Región factible y recorrido del método"></svg>
+                        <figcaption class="nota"></figcaption>
+                    </figure>
+                </div>
                 <div class="control-tablas" id="control-tablas" hidden>
                     <div class="selector" role="group" aria-label="Tablas a la vista">
                         <button type="button" data-vista="juntas" aria-pressed="true">Juntas</button>
