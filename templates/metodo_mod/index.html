@@ -3,61 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Método MOD · Software de Optimización</title>
+    <title>Método MOD (Distribución Modificada) · Optimización</title>
     <link rel="stylesheet" href="{{ url_for('mod_bp.static', filename='mod.css') }}">
-    <script defer src="{{ url_for('mod_bp.static', filename='mod.js') }}"></script>
 </head>
 <body>
-    <header>
+    <header class="top-nav">
         <a class="brand" href="{{ url_for('index') }}">Optimizador <span>/ Método MOD</span></a>
         <nav aria-label="Navegación de métodos">
-            <a href="{{ url_for('index') }}">Todos los métodos</a>
+            <a href="{{ url_for('index') }}">← Volver al inicio</a>
             <a href="{{ url_for('grafico_bp.vista_principal') }}">Método gráfico</a>
-            <a href="{{ url_for('mod_bp.vista_principal') }}" aria-current="page">MOD</a>
+            <a href="{{ url_for('mod_bp.vista_principal') }}" aria-current="page">Método MOD</a>
         </nav>
     </header>
-    <main>
-        <section class="intro">
-            <p class="eyebrow">MATEMÁTICAS · OPERACIÓN MÓDULO</p>
-            <h1>Lo que sobra<br>también cuenta<span>.</span></h1>
-            <p>Calcula el residuo de una división entre enteros y descubre cómo se obtiene, paso a paso.</p>
+
+    <main class="contenedor-principal">
+        <section class="intro-header">
+            <span class="badge-tag">INVESTIGACIÓN DE OPERACIONES · TRANSPORTE</span>
+            <h1>Método MOD (Distribución Modificada)</h1>
+            <p class="subtitulo">
+                Optimiza problemas de transporte mediante multiplicadores <em>u<sub>i</sub></em> y <em>v<sub>j</sub></em>,
+                calcula los costes de mejora en cada celda no básica y redacta conclusiones gerenciales basadas en el contexto del ejercicio.
+            </p>
         </section>
-        <div class="workspace">
-            <section class="card" aria-labelledby="calculator-title">
-                <p class="eyebrow">01 / INGRESA TUS DATOS</p>
-                <h2 id="calculator-title">Calculadora MOD</h2>
-                <form id="mod-form" data-endpoint="{{ url_for('mod_bp.calcular') }}">
-                    <div class="operands">
-                        <div><label for="dividendo">Dividendo (a)</label><input id="dividendo" name="dividendo" type="text" value="10" maxlength="201" required pattern="[+\-]?[0-9]+" aria-describedby="input-help" autocomplete="off"></div>
-                        <span class="operator" aria-hidden="true">MOD</span>
-                        <div><label for="divisor">Divisor (b)</label><input id="divisor" name="divisor" type="text" value="3" maxlength="201" required pattern="[+\-]?[0-9]+" aria-describedby="input-help" autocomplete="off"></div>
-                    </div>
-                    <p id="input-help" class="hint">Solo enteros, hasta 200 dígitos. El divisor debe ser distinto de cero.</p>
-                    <div class="actions"><button type="submit" id="calculate">Calcular residuo <span aria-hidden="true">→</span></button><button type="reset" class="secondary">Limpiar</button></div>
-                    <p id="error" class="error" role="alert" hidden></p>
-                    <p id="status" class="hint" role="status"></p>
-                </form>
-                <div class="examples"><span>Prueba un ejemplo</span><button type="button" data-a="10" data-b="3">10 MOD 3</button><button type="button" data-a="20" data-b="5">20 MOD 5</button><button type="button" data-a="17" data-b="2">17 MOD 2</button><button type="button" data-a="-10" data-b="3">−10 MOD 3</button></div>
-            </section>
-            <section class="card result-card" aria-labelledby="result-title">
-                <p class="eyebrow">02 / ENTIENDE EL RESULTADO</p>
-                <h2 id="result-title">El residuo</h2>
-                <p id="empty-result" class="placeholder">Ingresa dos enteros y pulsa «Calcular residuo».</p>
-                <div id="result" hidden>
-                    <p id="expression" class="hint"></p>
-                    <p id="remainder" class="remainder"></p>
-                    <p id="equation" class="equation"></p>
-                    <ol class="steps"><li id="step-quotient"></li><li id="step-product"></li><li id="step-remainder"></li></ol>
-                    <div class="facts"><p id="divisibility"></p><p id="parity"></p></div>
+
+        <!-- Formulario principal -->
+        <section class="card panel-formulario">
+            <form method="POST" id="form-mod">
+                <input type="hidden" id="num-origenes" name="num_origenes" value="{{ filas }}">
+                <input type="hidden" id="num-destinos" name="num_destinos" value="{{ columnas }}">
+
+                <!-- 1. Cuadro de texto para el contexto del ejercicio -->
+                <div class="grupo-campo">
+                    <label for="contexto-ejercicio" class="label-titulo">
+                        <strong>Contexto del ejercicio</strong>
+                        <span class="ayuda-campo">(Opcional: ingresa el enunciado, la empresa, productos o situación del problema para personalizar la conclusión)</span>
+                    </label>
+                    <textarea
+                        id="contexto-ejercicio"
+                        name="contexto"
+                        rows="3"
+                        placeholder="Ejemplo: La empresa de lácteos cuenta con 3 plantas procesadoras y 3 centros de distribución urbanos. Se busca maximizar la rentabilidad de las entregas semanales considerando las utilidades netas por flete..."
+                    >{{ contexto }}</textarea>
                 </div>
-            </section>
-        </div>
-        <section class="explanation" aria-labelledby="about-title">
-            <div><p class="eyebrow">LA REGLA</p><h2 id="about-title">a = b × q + r</h2></div>
-            <div><p><strong>a</strong> es el dividendo, <strong>b</strong> el divisor, <strong>q</strong> el cociente entero y <strong>r</strong> el residuo.</p><p>Usamos módulo euclídeo: <strong>0 ≤ r &lt; |b|</strong>. El residuo siempre es no negativo, incluso con entradas negativas. Por ejemplo, −10 = 3 × (−4) + 2. Esta convención puede diferir del operador % de algunos lenguajes.</p><p>Un residuo 0 indica divisibilidad exacta. Para comprobar paridad se calcula a MOD 2, independientemente del divisor elegido.</p></div>
+
+                <!-- 2. Objetivo de optimización y botones de ejemplos -->
+                <div class="fila-controles">
+                    <div class="control-opt">
+                        <label for="tipo_opt" class="label-inline"><strong>Objetivo de optimización:</strong></label>
+                        <select name="tipo_opt" id="tipo_opt">
+                            <option value="max" {% if tipo_opt == 'max' %}selected{% endif %}>Maximizar (Utilidades / Ganancias)</option>
+                            <option value="min" {% if tipo_opt == 'min' %}selected{% endif %}>Minimizar (Costos de transporte)</option>
+                        </select>
+                    </div>
+                    <div class="ejemplos-rapidos">
+                        <span>Cargar ejemplo:</span>
+                        <button type="button" class="btn-chip" id="btn-ejemplo-max">Maximización (con costes de mejora)</button>
+                        <button type="button" class="btn-chip" id="btn-ejemplo-min">Minimización (costo mínimo)</button>
+                    </div>
+                </div>
+
+                <!-- 3. Tabla de transporte interactiva -->
+                <div class="barra-acciones-tabla">
+                    <h3>Matriz de Transporte y Asignación</h3>
+                    <div class="botones-dimension">
+                        <button type="button" class="btn-secundario" id="btn-agregar-origen">+ Agregar origen</button>
+                        <button type="button" class="btn-secundario" id="btn-quitar-origen">- Quitar origen</button>
+                        <button type="button" class="btn-secundario" id="btn-agregar-destino">+ Agregar destino</button>
+                        <button type="button" class="btn-secundario" id="btn-quitar-destino">- Quitar destino</button>
+                    </div>
+                </div>
+
+                <div class="tabla-contenedor">
+                    <table class="tabla-transporte" id="tabla-transporte">
+                        <thead>
+                            <tr id="fila-encabezados">
+                                <th>Origen \ Destino</th>
+                                {% for j in range(columnas) %}
+                                <th class="col-destino" data-col="{{ j }}">
+                                    <input type="text" name="nombre_destino_{{ j }}" value="{{ request.form.get('nombre_destino_' ~ j, 'Destino ' ~ (j + 1)) }}" class="input-nombre-col" title="Editar nombre de destino">
+                                </th>
+                                {% endfor %}
+                                <th class="col-oferta">Oferta (Capacidad)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cuerpo-origenes">
+                            {% for i in range(filas) %}
+                            <tr data-fila="{{ i }}">
+                                <th class="celda-nombre-origen">
+                                    <input type="text" name="nombre_origen_{{ i }}" value="{{ request.form.get('nombre_origen_' ~ i, 'Origen ' ~ (i + 1)) }}" class="input-nombre-fila" title="Editar nombre de origen">
+                                </th>
+                                {% for j in range(columnas) %}
+                                <td>
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        required
+                                        name="costo_{{ i }}_{{ j }}"
+                                        value="{{ request.form.get('costo_' ~ i ~ '_' ~ j, '') }}"
+                                        placeholder="Costo"
+                                        class="input-costo"
+                                    >
+                                </td>
+                                {% endfor %}
+                                <td class="celda-oferta">
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        required
+                                        name="oferta_{{ i }}"
+                                        value="{{ request.form.get('oferta_' ~ i, '') }}"
+                                        placeholder="Oferta"
+                                        class="input-oferta"
+                                    >
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr id="fila-demandas">
+                                <th>Demanda</th>
+                                {% for j in range(columnas) %}
+                                <td data-col="{{ j }}">
+                                    <input
+                                        type="number"
+                                        step="any"
+                                        min="0"
+                                        required
+                                        name="demanda_{{ j }}"
+                                        value="{{ request.form.get('demanda_' ~ j, '') }}"
+                                        placeholder="Demanda"
+                                        class="input-demanda"
+                                    >
+                                </td>
+                                {% endfor %}
+                                <td class="celda-total-balance" id="celda-total-balance">Total</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="acciones-formulario">
+                    <button type="submit" class="btn-principal" id="btn-resolver">
+                        Resolver mediante Método MOD →
+                    </button>
+                    <button type="reset" class="btn-limpiar" id="btn-limpiar">Limpiar datos</button>
+                </div>
+            </form>
         </section>
-        <noscript><p class="error">Activa JavaScript para utilizar la calculadora.</p></noscript>
+
+        {% if error %}
+        <div class="mensaje-error" role="alert">
+            <strong>Error en el cálculo:</strong> {{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Resultados y Conclusión -->
+        {% if resultados %}
+        <section class="card panel-resultados" id="seccion-resultados">
+            <div class="encabezado-resultados">
+                <span class="badge-exito">CONVERGENCIA ÓPTIMA ALCANZADA</span>
+                <h2>Resultados de la Optimización por Método MOD</h2>
+            </div>
+
+            <!-- BLOQUE DE CONCLUSIÓN DESTACADA -->
+            <div class="bloque-conclusion">
+                <div class="conclusion-cabecera">
+                    <span class="icono-conclusion">📌</span>
+                    <div>
+                        <h3>Conclusión e Interpretación Gerencial</h3>
+                        <p class="conclusion-sub">{{ resultados.conclusion.tipo_texto }}</p>
+                    </div>
+                </div>
+
+                {% if resultados.contexto %}
+                <div class="caja-contexto-resaltado">
+                    <strong>Contexto considerado del ejercicio:</strong>
+                    <p>«{{ resultados.contexto }}»</p>
+                </div>
+                {% endif %}
+
+                <div class="caja-z-optimo">
+                    <span class="etiqueta-z">Valor Óptimo de la Función Objetivo (Z):</span>
+                    <span class="valor-z">{{ resultados.solucion_optima.z_str }}</span>
+                    <span class="detalle-z">
+                        ({{ "Ganancia máxima alcanzada" if resultados.tipo_opt == 'max' else "Costo mínimo de transporte total" }})
+                    </span>
+                </div>
+
+                <!-- Detalle de la Conclusión -->
+                <div class="texto-conclusion-parrafos">
+                    {% for p in resultados.conclusion.parrafos %}
+                    <p>{{ p|replace('\n', '<br>')|safe }}</p>
+                    {% endfor %}
+                </div>
+
+                <!-- Resumen de Costes de Mejora en la solución óptima -->
+                <div class="seccion-costes-mejora">
+                    <h4>Desglose de Costes de Mejora (Δ<sub>ij</sub> = c<sub>ij</sub> - u<sub>i</sub> - v<sub>j</sub>)</h4>
+                    <p class="explicacion-costes">
+                        {% if resultados.tipo_opt == 'max' %}
+                        En maximización, el óptimo exige que todos los costes de mejora en las celdas no básicas sean <strong>menores o iguales a cero (Δ<sub>ij</sub> ≤ 0)</strong>. Un valor negativo indica cuánta ganancia se perdería si se utilizara esa ruta.
+                        {% else %}
+                        En minimización, el óptimo exige que todos los costes de mejora en las celdas no básicas sean <strong>mayores o iguales a cero (Δ<sub>ij</sub> ≥ 0)</strong>. Un valor positivo indica cuánto se incrementaría el costo unitario de transporte si se utilizara esa ruta.
+                        {% endif %}
+                    </p>
+
+                    <div class="grid-costes-mejora">
+                        {% for item in resultados.solucion_optima.costes_mejora %}
+                        <div class="tarjeta-coste {% if item.delta == 0 %}coste-cero{% elif (resultados.tipo_opt == 'max' and item.delta <= 0) or (resultados.tipo_opt == 'min' and item.delta >= 0) %}coste-optimo{% endif %}">
+                            <div class="ruta-coste"><strong>{{ item.origen }}</strong> → <strong>{{ item.destino }}</strong></div>
+                            <div class="valor-coste">Δ<sub>{{ item.i + 1 }}{{ item.j + 1 }}</sub> = <span>{{ item.delta_str }}</span></div>
+                            <div class="desc-coste">
+                                {% if item.delta == 0 %}
+                                    <span class="tag-cero">Solución alterna posible</span>
+                                {% elif resultados.tipo_opt == 'max' %}
+                                    Reduce la ganancia en {{ item.delta_str|replace('-', '') }} por unidad
+                                {% else %}
+                                    Aumenta el costo en {{ item.delta_str }} por unidad
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Plan de asignaciones activas -->
+                <div class="seccion-rutas-activas">
+                    <h4>Plan de Rutas Asignadas</h4>
+                    <ul>
+                        {% for r in resultados.conclusion.rutas_asignadas %}
+                        <li>{{ r }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- TABLA DE ASIGNACIÓN FINAL -->
+            <div class="bloque-tabla-optima">
+                <h3>Tabla Final de Asignaciones y Multiplicadores</h3>
+                <p class="ayuda-tabla">
+                    Celdas destacadas en verde: asignaciones básicas.
+                    Celdas con texto secundario: celdas no básicas con su respectivo coste de mejora Δ.
+                </p>
+                <div class="tabla-contenedor">
+                    <table class="tabla-resultado">
+                        <thead>
+                            <tr>
+                                <th>Origen</th>
+                                {% for d in resultados.nombres_destinos %}
+                                <th>{{ d }}</th>
+                                {% endfor %}
+                                <th>u<sub>i</sub></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(resultados.nombres_origenes|length) %}
+                            <tr>
+                                <th>{{ resultados.nombres_origenes[i] }}</th>
+                                {% for j in range(resultados.nombres_destinos|length) %}
+                                {% set cant = resultados.solucion_optima.asignaciones[i][j] %}
+                                {% set c_unit = resultados.costos[i][j] %}
+                                <td class="{% if cant != '0' %}celda-asignada{% else %}celda-vacia{% endif %}">
+                                    <div class="costo-esquina" title="Costo/Utilidad unitario">c={{ c_unit }}</div>
+                                    {% if cant != '0' %}
+                                        <div class="asignacion-valor">{{ cant }}</div>
+                                    {% else %}
+                                        {% for cm in resultados.solucion_optima.costes_mejora %}
+                                            {% if cm.i == i and cm.j == j %}
+                                            <div class="coste-mejora-tag" title="Coste de mejora">Δ = {{ cm.delta_str }}</div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </td>
+                                {% endfor %}
+                                <td class="multiplicador-u"><strong>{{ resultados.solucion_optima.u_str[i] }}</strong></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot>
+                            <tr>
+                                <th>v<sub>j</sub></th>
+                                {% for j in range(resultados.nombres_destinos|length) %}
+                                <td class="multiplicador-v"><strong>{{ resultados.solucion_optima.v_str[j] }}</strong></td>
+                                {% endfor %}
+                                <td>—</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+
+            <!-- PASO A PASO / ITERACIONES -->
+            <div class="bloque-iteraciones">
+                <h3>Iteraciones del Método MOD (Paso a paso)</h3>
+                <p class="ayuda-tabla">
+                    En cada iteración se muestran los multiplicadores <em>u<sub>i</sub></em> y <em>v<sub>j</sub></em>, los costes de mejora calculados, la celda entrante con su ciclo de ajuste (stepping stone) y el valor de ajuste θ.
+                </p>
+
+                {% for it in resultados.iteraciones %}
+                <div class="iteracion-item">
+                    <div class="iteracion-titulo">
+                        <h4>Iteración {{ it.numero }} {% if it.es_optimo %}— <span class="tag-optimo">¡Solución Óptima!</span>{% endif %}</h4>
+                        <span class="z-iteracion">Z = {{ it.z_str }}</span>
+                    </div>
+
+                    {% if not it.es_optimo %}
+                    <div class="ajuste-info">
+                        <span><strong>Celda entrante:</strong> {{ it.celda_entrante_nombre }}</span>
+                        <span><strong>Celda saliente:</strong> {{ it.celda_saliente_nombre }}</span>
+                        <span><strong>Valor de ajuste θ:</strong> {{ it.theta_str }}</span>
+                    </div>
+                    {% endif %}
+
+                    <div class="tabla-contenedor">
+                        <table class="tabla-resultado tabla-mini">
+                            <thead>
+                                <tr>
+                                    <th>Origen</th>
+                                    {% for d in resultados.nombres_destinos %}<th>{{ d }}</th>{% endfor %}
+                                    <th>u<sub>i</sub></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for i in range(resultados.nombres_origenes|length) %}
+                                <tr>
+                                    <th>{{ resultados.nombres_origenes[i] }}</th>
+                                    {% for j in range(resultados.nombres_destinos|length) %}
+                                    {% set val = it.asignaciones[i][j] %}
+                                    <td class="{% if val > 0 %}celda-asignada{% else %}celda-vacia{% endif %}">
+                                        {% if val > 0 %}
+                                            <strong>{{ val }}</strong>
+                                        {% else %}
+                                            {% for cm in it.costes_mejora %}
+                                                {% if cm.i == i and cm.j == j %}
+                                                <small class="cm-small">Δ={{ cm.delta_str }}</small>
+                                                {% endif %}
+                                            {% endfor %}
+                                        {% endif %}
+                                    </td>
+                                    {% endfor %}
+                                    <td class="multiplicador-u">{{ it.u_str[i] }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <th>v<sub>j</sub></th>
+                                    {% for j in range(resultados.nombres_destinos|length) %}
+                                    <td class="multiplicador-v">{{ it.v_str[j] }}</td>
+                                    {% endfor %}
+                                    <td>—</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
     </main>
-    <footer>Software de Optimización · Método MOD</footer>
+
+    <footer class="pie-pagina">
+        <p>Software de Optimización Lineal · Método MOD (Distribución Modificada)</p>
+    </footer>
+
+    <script src="{{ url_for('mod_bp.static', filename='mod.js') }}"></script>
 </body>
 </html>
