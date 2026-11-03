@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Método de la Gran M · OptiLab</title>
+    <script>try { if (localStorage.getItem('gran-m-tema') === 'claro') document.documentElement.dataset.tema = 'claro'; } catch (e) {}</script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&display=swap" rel="stylesheet">
@@ -34,18 +35,30 @@
     </div>
     {%- endmacro %}
 
-    <header class="cabecera">
-        <a href="{{ url_for('index') }}" class="marca">OptiLab</a>
-        <a href="{{ url_for('index') }}" class="volver">Volver al inicio</a>
+    <header class="banda" id="banda">
+        <div class="banda-interior">
+            <div class="cabecera">
+                <a href="{{ url_for('index') }}" class="marca">OPTILAB <span>/ USTA</span></a>
+                <div class="cabecera-acciones">
+                    <a href="{{ url_for('index') }}" class="volver">Volver al inicio</a>
+                    <button type="button" class="btn-tema" id="btn-tema" aria-label="Cambiar a tema claro"><span aria-hidden="true">☾ / ☀</span></button>
+                </div>
+            </div>
+            <div class="portada">
+                <div class="portada-texto">
+                    <p class="etiqueta-seccion">Laboratorio interactivo · Penalización M</p>
+                    <h1>Método de la <span class="acento">Gran M.</span></h1>
+                    <p class="bajada">Escribe el ejercicio, mira la región factible y sigue cómo el método saca de la base las variables artificiales.</p>
+                </div>
+                <div class="ficha-m" id="ficha-m" aria-hidden="true">
+                    <span class="ficha-letra">M</span>
+                    <span class="ficha-cuenta" id="ficha-cuenta">00</span>
+                </div>
+            </div>
+        </div>
     </header>
 
     <main class="hoja">
-        <div class="portada">
-            <h1>Método de la Gran M</h1>
-            <p class="bajada">Escribe el ejercicio, revisa el modelo y sigue cómo el método saca de la base las variables artificiales.</p>
-        </div>
-
-        <div class="lamina">
         <details class="plegable teoria" id="teoria" {% if not pasos %}open{% endif %}>
             <summary>Cómo funciona el método</summary>
             <div class="teoria-cuerpo">
@@ -75,7 +88,8 @@
         <div class="mesa">
         <!-- Enunciado: de aquí se sacan las variables y el modelo -->
         <section class="enunciado" id="contexto" aria-labelledby="titulo-enunciado">
-            <h2 id="titulo-enunciado">Enunciado</h2>
+            <p class="etiqueta-seccion">01 / Enunciado</p>
+            <h2 id="titulo-enunciado">Escribe el ejercicio</h2>
             <p class="nota" id="ayuda-enunciado">
                 Las líneas con fórmula, como <em>Maximizar Z = 3x + 5y</em> o <em>2x + y ≤ 18</em>, forman el modelo.
                 El resto del texto se ignora.
@@ -99,7 +113,10 @@
         <!-- Modelo editable y cálculo -->
         <section class="modelo" id="formulario" aria-labelledby="titulo-modelo">
             <div class="modelo-cabeza">
-                <h2 id="titulo-modelo">Modelo</h2>
+                <div>
+                    <p class="etiqueta-seccion">02 / Modelo</p>
+                    <h2 id="titulo-modelo">Revisa el modelo</h2>
+                </div>
                 <form method="GET" action="{{ url_for('gran_m_bp.vista_principal') }}" id="form-ejemplo">
                     <button type="submit" class="btn btn-sutil" id="btn-ejemplo">Cargar ejemplo</button>
                     <div class="confirmacion" id="confirmar-ejemplo" hidden>
@@ -171,7 +188,8 @@
 
         <!-- Visor paso a paso (solo cuando hay resultados) -->
         <section class="visor" id="visor" aria-labelledby="titulo-visor" data-tipo="{{ datos.tipo_opt }}" {% if not pasos %}hidden{% endif %}>
-            <h2 id="titulo-visor">Resolución paso a paso</h2>
+            <p class="etiqueta-seccion">03 / Resolución</p>
+            <h2 id="titulo-visor">Sigue el método paso a paso</h2>
 
             <ol class="fases" id="fases" aria-label="Fases del método"></ol>
             <p class="contador" id="contador"></p>
@@ -220,7 +238,6 @@
                 <button id="btn-siguiente" class="btn" type="button">Siguiente</button>
             </div>
         </section>
-        </div>
 
     </main>
 

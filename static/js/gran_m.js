@@ -26,6 +26,55 @@
         }
     }
 
+    // ── Tema y ficha M ───────────────────────────────────────────────────────────
+    function iniciarTema() {
+        const boton = document.getElementById('btn-tema');
+        const raiz = document.documentElement;
+
+        function rotular() {
+            boton.setAttribute('aria-label', raiz.dataset.tema === 'claro' ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro');
+        }
+
+        boton.addEventListener('click', function () {
+            if (raiz.dataset.tema === 'claro') {
+                delete raiz.dataset.tema;
+            } else {
+                raiz.dataset.tema = 'claro';
+            }
+            try {
+                localStorage.setItem('gran-m-tema', raiz.dataset.tema || 'oscuro');
+            } catch (error) {
+                // Sin almacenamiento el tema vale solo para esta visita
+            }
+            rotular();
+        });
+        rotular();
+    }
+
+    function iniciarFicha() {
+        const banda = document.getElementById('banda');
+        const ficha = document.getElementById('ficha-m');
+
+        banda.addEventListener('pointermove', function (evento) {
+            if (movimiento.matches || evento.pointerType === 'touch') {
+                return;
+            }
+            const caja = banda.getBoundingClientRect();
+            ficha.style.setProperty('--giro-x', `${((evento.clientX - caja.left) / caja.width - 0.5) * 22}deg`);
+            ficha.style.setProperty('--giro-y', `${((evento.clientY - caja.top) / caja.height - 0.5) * -22}deg`);
+        });
+        banda.addEventListener('pointerleave', function () {
+            ficha.style.removeProperty('--giro-x');
+            ficha.style.removeProperty('--giro-y');
+        });
+    }
+
+    // La ficha cuenta artificiales: las previstas al escribir y las que quedan al resolver
+    function marcarPenalizacion(cuenta) {
+        document.body.dataset.penalizacion = cuenta > 0 ? 'activa' : 'saldada';
+        document.getElementById('ficha-cuenta').textContent = String(cuenta).padStart(2, '0');
+    }
+
     // ── Números: acepta lo mismo que el servidor (2, 1.5, 1,5, 1/3, -2) ──────────
     const PATRON_DECIMAL = /^[+-]?(?:\d+(?:[.,]\d*)?|[.,]\d+)(?:[eE][+-]?\d+)?$/;
     const PATRON_FRACCION = /^[+-]?\d+\/\d+$/;
@@ -264,6 +313,9 @@
                 const nombre = `A${subindice(artificiales)}`;
                 marca.textContent = estado.invertida ? `se invierte y lleva ${nombre}` : `lleva ${nombre}`;
             });
+            if (document.getElementById('visor').hidden) {
+                marcarPenalizacion(artificiales);
+            }
         }
 
         function actualizarVistaPrevia() {
@@ -1159,7 +1211,7 @@
             mostrarHechos(iteracion);
             actualizarFases();
             actualizarContador(opciones.animar);
-            document.body.dataset.penalizacion = derivados[indiceActual].artificialesEnBase.length > 0 ? 'activa' : 'saldada';
+            marcarPenalizacion(derivados[indiceActual].artificialesEnBase.length);
 
             elementos.explicacion.innerHTML = resaltarTerminosM(acortarDecimales(paso.explicacion));
 
@@ -1257,6 +1309,8 @@
         mostrarPaso({ foco: true, animar: false });
     }
 
+    iniciarTema();
+    iniciarFicha();
     renderizarMath(document.getElementById('teoria'));
     iniciarFormulario();
     iniciarVisor();
