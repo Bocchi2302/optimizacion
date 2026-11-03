@@ -749,7 +749,7 @@
                 });
         }
 
-        function anunciar(paso) {
+        function anunciar() {
             const d = derivados[indiceActual];
             let texto = `Paso ${indiceActual + 1} de ${pasos.length}, fase ${FASES[d.fase].nombre}.`;
             if (d.salen.length > 0) {
@@ -1187,7 +1187,7 @@
                 if (posicion < 0 || posicion > window.innerHeight * 0.5) {
                     elementos.fases.scrollIntoView({ block: 'start', behavior: movimiento.matches ? 'auto' : 'smooth' });
                 }
-                anunciar(paso);
+                anunciar();
             }
         }
 
