@@ -445,23 +445,261 @@
     }
 
     // ── Visor paso a paso ────────────────────────────────────────────────────────
+    const FASES = [
+        { nombre: 'Estandarizar', patron: /estandariz/i },
+        { nombre: 'Tabla inicial', patron: /tabla inicial/i },
+        { nombre: 'Preparar fila Z', patron: /eliminaci[oó]n/i },
+        { nombre: 'Iteraciones', patron: /iteraci[oó]n/i },
+        { nombre: 'Resultado', patron: /soluci[oó]n|diagn[oó]stico/i }
+    ];
+    const FASE_POR_DEFECTO = 3;
+
+    function limpiarTitulo(titulo) {
+        return titulo.replace(/^Paso\s+\d+\s*:\s*/i, '');
+    }
+
+    // Si el solver agrega un título desconocido, el paso cae en la fase del anterior
+    function faseDe(titulo, faseAnterior) {
+        const indice = FASES.findIndex(function (fase) {
+            return fase.patron.test(titulo);
+        });
+        if (indice !== -1) {
+            return indice;
+        }
+        return faseAnterior === null ? FASE_POR_DEFECTO : faseAnterior;
+    }
+
+    function esArtificial(nombre) {
+        return /^A[₀-₉]/.test(nombre);
+    }
+
+    // Quita el ruido de los decimales periódicos sin tocar el valor exacto
+    function acortarNumero(texto) {
+        const decimales = (texto.split('.')[1] || '').length;
+        if (decimales <= 4 && !/e/i.test(texto)) {
+            return texto;
+        }
+        const redondeado = Number(Number(texto).toFixed(4));
+        return redondeado === 0 ? texto : String(redondeado);
+    }
+
+    function acortarDecimales(texto) {
+        return texto.replace(/-?\d+\.\d{5,}/g, acortarNumero);
+    }
+
     function iniciarVisor() {
         // Datos generados por Python: lista de pasos con títulos, explicaciones, tablas y pivote
         const pasos = JSON.parse(document.getElementById('datos-pasos').textContent);
-        let indiceActual = 0;
+        if (pasos.length === 0) {
+            return;
+        }
 
         const elementos = {
             visor: document.getElementById('visor'),
+            fases: document.getElementById('fases'),
+            contador: document.getElementById('contador'),
+            aviso: document.getElementById('aviso-final'),
+            irDiagnostico: document.getElementById('btn-diagnostico'),
+            anuncio: document.getElementById('anuncio'),
             titulo: document.getElementById('titulo-paso'),
+            hechos: document.getElementById('hechos-paso'),
             indicador: document.getElementById('indicador'),
-            progreso: document.getElementById('progreso-relleno'),
+            faseActual: document.getElementById('fase-actual'),
             explicacion: document.getElementById('explicacion'),
             formulas: document.getElementById('formulas'),
-            tablaPrincipal: document.getElementById('tabla-principal'),
-            tablaResultado: document.getElementById('tabla-resultado'),
+            tablas: document.getElementById('tablas'),
             anterior: document.getElementById('btn-anterior'),
             siguiente: document.getElementById('btn-siguiente')
         };
+
+        let indiceActual = 0;
+
+        // Datos derivados de cada paso, sin tocar el contrato del solver
+        const tablaInicial = pasos.find(function (paso) { return paso.tabla; }).tabla;
+        const artificiales = tablaInicial.columnas.filter(esArtificial);
+
+        let faseAnterior = null;
+        const derivados = pasos.map(function (paso, i) {
+            const fase = faseDe(limpiarTitulo(paso.titulo), faseAnterior);
+            faseAnterior = fase;
+            const tablaFinal = paso.tabla_resultado || paso.tabla || tablaInicial;
+            const base = tablaFinal.filas.slice(1).map(function (fila) { return fila.base; });
+            const antes = paso.tabla ? paso.tabla.filas.slice(1).map(function (fila) { return fila.base; }) : base;
+            return {
+                indice: i,
+                fase: fase,
+                artificialesEnBase: base.filter(esArtificial),
+                salen: antes.filter(function (nombre) {
+                    return esArtificial(nombre) && !base.includes(nombre);
+                })
+            };
+        });
+
+        // Serie del contador sin repetidos seguidos: 2 → 1 → 0
+        const serie = [];
+        derivados.forEach(function (d) {
+            const cuenta = d.artificialesEnBase.length;
+            if (serie.length === 0 || serie[serie.length - 1].cuenta !== cuenta) {
+                serie.push({ cuenta: cuenta, desde: d.indice });
+            }
+        });
+
+        const botonesFase = FASES.map(function (fase, f) {
+            const delaFase = derivados.filter(function (d) { return d.fase === f; });
+            const item = document.createElement('li');
+            item.className = 'fase';
+            item.style.setProperty('--pasos', Math.max(delaFase.length, 1));
+
+            const boton = document.createElement('button');
+            boton.type = 'button';
+            boton.className = 'fase-boton';
+            boton.disabled = delaFase.length === 0;
+
+            const pista = document.createElement('span');
+            pista.className = 'fase-pista';
+            const marcas = delaFase.map(function (d) {
+                const marca = document.createElement('span');
+                marca.className = 'fase-marca';
+                marca.dataset.paso = d.indice;
+                pista.appendChild(marca);
+                return marca;
+            });
+            if (delaFase.length === 0) {
+                const vacia = document.createElement('span');
+                vacia.className = 'fase-marca';
+                pista.appendChild(vacia);
+            }
+
+            const nombre = document.createElement('span');
+            nombre.className = 'fase-nombre';
+            nombre.textContent = fase.nombre;
+
+            boton.append(pista, nombre);
+            boton.setAttribute('aria-label', delaFase.length === 0
+                ? `${fase.nombre}: sin pasos en este problema`
+                : `Ir a ${fase.nombre}`);
+            boton.addEventListener('click', function () {
+                irA(delaFase[0].indice);
+            });
+
+            item.appendChild(boton);
+            elementos.fases.appendChild(item);
+            return { boton: boton, marcas: marcas };
+        });
+
+        function actualizarFases() {
+            const faseVigente = derivados[indiceActual].fase;
+            botonesFase.forEach(function (fase, f) {
+                if (f === faseVigente) {
+                    fase.boton.setAttribute('aria-current', 'step');
+                } else {
+                    fase.boton.removeAttribute('aria-current');
+                }
+                fase.boton.classList.toggle('fase-vigente', f === faseVigente);
+                fase.marcas.forEach(function (marca) {
+                    const paso = Number(marca.dataset.paso);
+                    marca.classList.toggle('hecha', paso < indiceActual);
+                    marca.classList.toggle('actual', paso === indiceActual);
+                });
+            });
+            elementos.faseActual.textContent = FASES[faseVigente].nombre;
+        }
+
+        function actualizarContador(animar) {
+            const contador = elementos.contador;
+            contador.replaceChildren();
+
+            if (artificiales.length === 0) {
+                contador.textContent = 'Este problema no usa variables artificiales: arranca con las holguras en la base.';
+                contador.classList.add('contador-vacio');
+                return;
+            }
+
+            const actual = derivados[indiceActual];
+            const etiqueta = document.createElement('span');
+            etiqueta.textContent = 'Artificiales en la base:';
+
+            const cifras = document.createElement('span');
+            cifras.className = 'contador-serie';
+            let vigente = 0;
+            serie.forEach(function (tramo, i) {
+                if (tramo.desde <= indiceActual) {
+                    vigente = i;
+                }
+            });
+            serie.forEach(function (tramo, i) {
+                if (i > 0) {
+                    const flecha = document.createElement('span');
+                    flecha.className = 'contador-flecha';
+                    flecha.setAttribute('aria-hidden', 'true');
+                    flecha.textContent = '→';
+                    cifras.appendChild(flecha);
+                }
+                const cifra = document.createElement('span');
+                cifra.className = 'contador-cifra';
+                cifra.textContent = tramo.cuenta;
+                cifra.classList.toggle('vigente', i === vigente);
+                cifra.classList.toggle('futura', i > vigente);
+                if (i === vigente) {
+                    cifra.setAttribute('aria-current', 'true');
+                }
+                cifras.appendChild(cifra);
+            });
+
+            const nombres = document.createElement('span');
+            nombres.className = 'contador-nombres';
+            artificiales.forEach(function (nombre) {
+                const chip = document.createElement('span');
+                chip.className = 'artificial';
+                chip.textContent = nombre;
+                if (!actual.artificialesEnBase.includes(nombre)) {
+                    chip.classList.add('tachada');
+                    const estado = document.createElement('span');
+                    estado.className = 'solo-lector';
+                    estado.textContent = ' fuera de la base';
+                    chip.appendChild(estado);
+                    if (animar && actual.salen.includes(nombre)) {
+                        chip.classList.add('animar');
+                    }
+                }
+                nombres.appendChild(chip);
+            });
+
+            contador.append(etiqueta, cifras, nombres);
+        }
+
+        function datosDeIteracion(titulo) {
+            const partes = /^(Iteraci[oó]n \d+)\s*\(Columna pivote (.+), Fila pivote (.+), Elemento pivote (.+)\)$/.exec(titulo);
+            return partes
+                ? { titulo: partes[1], entra: partes[2], sale: partes[3], pivote: partes[4] }
+                : null;
+        }
+
+        function mostrarHechos(iteracion) {
+            elementos.hechos.replaceChildren();
+            elementos.hechos.hidden = !iteracion;
+            if (!iteracion) {
+                return;
+            }
+            [['entra', iteracion.entra], ['sale', iteracion.sale], ['pivote', acortarDecimales(iteracion.pivote)]]
+                .forEach(function (hecho) {
+                    const parte = document.createElement('span');
+                    const valor = document.createElement('strong');
+                    parte.textContent = `${hecho[0]} `;
+                    valor.textContent = hecho[1];
+                    parte.appendChild(valor);
+                    elementos.hechos.appendChild(parte);
+                });
+        }
+
+        function anunciar(paso) {
+            const d = derivados[indiceActual];
+            let texto = `Paso ${indiceActual + 1} de ${pasos.length}, fase ${FASES[d.fase].nombre}.`;
+            if (d.salen.length > 0) {
+                texto += ` Sale ${d.salen.join(' y ')}. Artificiales en la base: ${d.artificialesEnBase.length}.`;
+            }
+            elementos.anuncio.textContent = texto;
+        }
 
         // Construye una tabla Simplex y aplica las clases de resaltado del pivote
         function crearTabla(datos, pivote, etiqueta) {
@@ -480,7 +718,6 @@
             const tabla = document.createElement('table');
             tabla.className = 'tabla-simplex';
 
-            // Encabezado: la columna 0 es "Base"; las columnas de datos van desde la 1
             const encabezado = tabla.createTHead().insertRow();
             ['Base'].concat(datos.columnas).forEach(function (texto, j) {
                 const th = document.createElement('th');
@@ -491,7 +728,6 @@
                 encabezado.appendChild(th);
             });
 
-            // Cuerpo: fila i (0 = Z) y columna j (0 = Z, ..., 7 = Solución)
             const cuerpo = tabla.createTBody();
             datos.filas.forEach(function (fila, i) {
                 const tr = cuerpo.insertRow();
@@ -520,69 +756,102 @@
             return bloque;
         }
 
-        function mostrarPaso() {
+        function dibujarTablas(paso) {
+            elementos.tablas.replaceChildren();
+            if (paso.tabla) {
+                const etiqueta = paso.tabla_resultado ? 'Antes del pivoteo' : null;
+                elementos.tablas.appendChild(crearTabla(paso.tabla, paso.pivote, etiqueta));
+            }
+            if (paso.tabla_resultado) {
+                elementos.tablas.appendChild(crearTabla(paso.tabla_resultado, null, 'Después del pivoteo'));
+            }
+        }
+
+        function mostrarPaso(opciones) {
             const paso = pasos[indiceActual];
+            const titulo = limpiarTitulo(paso.titulo);
+            const iteracion = datosDeIteracion(titulo);
 
             elementos.indicador.textContent = `Paso ${indiceActual + 1} de ${pasos.length}`;
-            elementos.progreso.style.width = `${((indiceActual + 1) / pasos.length) * 100}%`;
-            elementos.titulo.textContent = paso.titulo;
-            elementos.explicacion.innerHTML = paso.explicacion;
+            elementos.titulo.textContent = iteracion ? iteracion.titulo : titulo;
+            mostrarHechos(iteracion);
+            actualizarFases();
+            actualizarContador(opciones.animar);
 
-            elementos.formulas.innerHTML = '';
+            elementos.explicacion.innerHTML = acortarDecimales(paso.explicacion);
+
+            elementos.formulas.replaceChildren();
             paso.formulas.forEach(function (texto) {
                 const div = document.createElement('div');
                 div.className = 'formula';
-                div.textContent = texto;
+                div.textContent = acortarDecimales(texto);
                 elementos.formulas.appendChild(div);
             });
 
-            elementos.tablaPrincipal.innerHTML = '';
-            elementos.tablaResultado.innerHTML = '';
+            dibujarTablas(paso, opciones.animar);
 
-            if (paso.tabla) {
-                const etiqueta = paso.tabla_resultado ? 'Tabla antes del pivoteo' : null;
-                elementos.tablaPrincipal.appendChild(crearTabla(paso.tabla, paso.pivote, etiqueta));
+            if (elementos.aviso) {
+                elementos.aviso.hidden = indiceActual === pasos.length - 1;
             }
-            if (paso.tabla_resultado) {
-                elementos.tablaResultado.appendChild(
-                    crearTabla(paso.tabla_resultado, null, 'Tabla después del pivoteo')
-                );
-            }
-
             elementos.anterior.disabled = indiceActual === 0;
             elementos.siguiente.disabled = indiceActual === pasos.length - 1;
 
-            renderizarMath(elementos.visor);
-        }
+            renderizarMath(elementos.explicacion);
+            renderizarMath(elementos.formulas);
 
-        function irAnterior() {
-            if (indiceActual > 0) {
-                indiceActual--;
-                mostrarPaso();
+            if (opciones.foco) {
+                elementos.titulo.focus({ preventScroll: true });
+                const posicion = elementos.titulo.getBoundingClientRect().top;
+                if (posicion < 0 || posicion > window.innerHeight * 0.5) {
+                    elementos.fases.scrollIntoView({ block: 'start', behavior: movimiento.matches ? 'auto' : 'smooth' });
+                }
+                anunciar(paso);
             }
         }
 
-        function irSiguiente() {
-            if (indiceActual < pasos.length - 1) {
-                indiceActual++;
-                mostrarPaso();
+        function irA(indice) {
+            if (indice < 0 || indice >= pasos.length || indice === indiceActual) {
+                return;
             }
+            const animar = indice > indiceActual;
+            indiceActual = indice;
+            mostrarPaso({ foco: true, animar: animar });
         }
 
-        elementos.anterior.addEventListener('click', irAnterior);
-        elementos.siguiente.addEventListener('click', irSiguiente);
+        elementos.anterior.addEventListener('click', function () {
+            irA(indiceActual - 1);
+        });
+        elementos.siguiente.addEventListener('click', function () {
+            irA(indiceActual + 1);
+        });
+        if (elementos.irDiagnostico) {
+            elementos.irDiagnostico.addEventListener('click', function () {
+                irA(pasos.length - 1);
+            });
+        }
 
+        // Las flechas no secuestran la escritura ni el desplazamiento de una tabla
         document.addEventListener('keydown', function (evento) {
-            if (evento.key === 'ArrowRight') {
-                irSiguiente();
-            } else if (evento.key === 'ArrowLeft') {
-                irAnterior();
+            if (evento.altKey || evento.ctrlKey || evento.metaKey || evento.shiftKey) {
+                return;
             }
+            const destinos = {
+                ArrowRight: indiceActual + 1,
+                ArrowLeft: indiceActual - 1,
+                Home: 0,
+                End: pasos.length - 1
+            };
+            if (!(evento.key in destinos)) {
+                return;
+            }
+            if (evento.target.closest('input, select, textarea, [contenteditable], .tabla-envoltorio[tabindex]')) {
+                return;
+            }
+            evento.preventDefault();
+            irA(destinos[evento.key]);
         });
 
-        if (pasos.length > 0) {
-            mostrarPaso();
-        }
+        mostrarPaso({ foco: true, animar: false });
     }
 
     renderizarMath(document.getElementById('teoria'));

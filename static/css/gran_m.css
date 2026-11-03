@@ -626,3 +626,277 @@ a {
         width: 100%;
     }
 }
+
+/* ── Visor ──────────────────────────────────────────── */
+html {
+    scroll-padding-block: var(--esp-4) 6rem;
+}
+
+.visor {
+    padding-top: var(--esp-5);
+}
+
+/* Fases: cada marca es un paso real, así que la línea muestra cuánto iteró el problema */
+.fases {
+    display: flex;
+    gap: var(--esp-2);
+    margin: var(--esp-4) 0 0;
+    padding: 0;
+    list-style: none;
+    scroll-margin-top: var(--esp-4);
+}
+
+.fase {
+    flex: var(--pasos, 1) 1 6.5rem;
+    min-width: 0;
+}
+
+.fase-boton {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    width: 100%;
+    min-height: var(--tactil);
+    padding: var(--esp-2) 0;
+    border: 0;
+    border-radius: var(--radio-s);
+    background: transparent;
+    color: var(--pizarra-honda);
+    font: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: left;
+    cursor: pointer;
+}
+
+.fase-boton:hover:not(:disabled) {
+    color: var(--tinta);
+}
+
+.fase-boton:disabled {
+    color: var(--pizarra);
+    cursor: not-allowed;
+}
+
+.fase-boton.fase-vigente {
+    color: var(--tinta);
+    font-weight: 600;
+}
+
+.fase-pista {
+    display: flex;
+    gap: 2px;
+}
+
+.fase-marca {
+    flex: 1;
+    height: 6px;
+    background: var(--linea);
+}
+
+.fase-marca.hecha {
+    background: var(--tinta);
+}
+
+.fase-marca.actual {
+    background: var(--dorado);
+    box-shadow: 0 0 0 1px var(--tinta);
+}
+
+/* Contador de artificiales: el único momento destacado de la pantalla */
+.contador {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--esp-1) var(--esp-3);
+    margin-top: var(--esp-3);
+    padding-block: var(--esp-2);
+    border-block: 1px solid var(--linea);
+    font-weight: 500;
+}
+
+.contador-vacio {
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+    font-weight: 400;
+}
+
+.contador-serie {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--esp-2);
+    font-family: var(--fuente-titulo);
+    font-size: 1.25rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.contador-flecha,
+.contador-cifra.futura {
+    color: var(--pizarra);
+}
+
+.contador-cifra.vigente {
+    color: var(--vino-m);
+    font-weight: 600;
+    text-decoration: underline 2px var(--dorado);
+    text-underline-offset: 4px;
+}
+
+.contador-nombres {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+}
+
+.artificial {
+    color: var(--vino-m);
+    font-weight: 600;
+}
+
+/* El tachado es el estado final; la animación solo lo dibuja */
+.tachada {
+    background: linear-gradient(currentColor, currentColor) no-repeat center / 100% 2px;
+    color: var(--pizarra-honda);
+    font-weight: 500;
+}
+
+.tachada.animar {
+    animation: tachar 0.9s ease-out both;
+}
+
+@keyframes tachar {
+    0%, 25% { background-size: 0 2px; color: var(--vino-m); }
+    100% { background-size: 100% 2px; color: var(--pizarra-honda); }
+}
+
+.aviso-final {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-1) var(--esp-3);
+    margin-top: var(--esp-3);
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+}
+
+.aviso-final .btn-sutil {
+    padding-inline: var(--esp-1);
+    font-size: 0.9375rem;
+}
+
+.paso {
+    margin-top: var(--esp-5);
+}
+
+.paso h3 {
+    scroll-margin-top: var(--esp-4);
+}
+
+.hechos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1) var(--esp-4);
+    margin-top: var(--esp-1);
+    color: var(--pizarra-honda);
+}
+
+.hechos strong {
+    color: var(--tinta);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.explicacion {
+    max-width: 68ch;
+    margin-top: var(--esp-3);
+}
+
+.explicacion p,
+.explicacion ul {
+    margin: 0 0 var(--esp-2);
+}
+
+.explicacion ul {
+    padding-left: var(--esp-5);
+}
+
+.formulas {
+    margin-top: var(--esp-3);
+}
+
+.formula {
+    padding-block: var(--esp-1);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Barra de navegación: la posición queda a la vista aunque la tabla sea larga */
+.controles {
+    position: sticky;
+    bottom: 0;
+    z-index: 3;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    margin-top: var(--esp-5);
+    padding-block: var(--esp-2);
+    border-top: 1px solid var(--linea);
+    background: var(--papel);
+}
+
+.posicion-bloque {
+    min-width: 0;
+    text-align: center;
+}
+
+.posicion {
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+.fase-actual {
+    display: none;
+    color: var(--pizarra-honda);
+    font-size: var(--texto-nota);
+    font-weight: 500;
+}
+
+.atajos {
+    white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+    .fases {
+        gap: 2px;
+    }
+
+    .fase {
+        flex: var(--pasos, 1) 1 var(--tactil);
+    }
+
+    .fase-boton {
+        justify-content: center;
+    }
+
+    /* Solo la fase actual lleva nombre, debajo de la posición */
+    .fase-nombre {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+    }
+
+    .fase-actual {
+        display: block;
+    }
+
+    .atajos {
+        display: none;
+    }
+
+    .controles .btn {
+        padding-inline: var(--esp-3);
+    }
+}

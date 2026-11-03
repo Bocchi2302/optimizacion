@@ -167,29 +167,37 @@
         {% endif %}
 
         <!-- Visor paso a paso (solo cuando hay resultados) -->
-        <section class="visor" id="visor" {% if not pasos %}hidden{% endif %}>
-            <h2>Resolución paso a paso</h2>
+        <section class="visor" id="visor" aria-labelledby="titulo-visor" data-tipo="{{ datos.tipo_opt }}" {% if not pasos %}hidden{% endif %}>
+            <h2 id="titulo-visor">Resolución paso a paso</h2>
 
-            <div class="barra-progreso">
-                <div id="progreso-relleno"></div>
-            </div>
-            <p class="indicador" id="indicador"></p>
+            <ol class="fases" id="fases" aria-label="Fases del método"></ol>
+            <p class="contador" id="contador"></p>
 
-            <h3 id="titulo-paso"></h3>
-            <div id="explicacion" class="explicacion"></div>
-            <div id="formulas"></div>
-            <div id="tabla-principal"></div>
-            <div id="tabla-resultado"></div>
+            {% if error and pasos %}
+            <p class="aviso-final" id="aviso-final">
+                <span>{{ error }}</span>
+                <button type="button" class="btn btn-sutil" id="btn-diagnostico">Ir al diagnóstico</button>
+            </p>
+            {% endif %}
 
-            <div class="leyenda">
-                <span class="muestra muestra-fila">Fila pivote</span>
-                <span class="muestra muestra-columna">Columna pivote</span>
-                <span class="muestra muestra-elemento">Elemento pivote</span>
+            <div class="solo-lector" id="anuncio" aria-live="polite" aria-atomic="true"></div>
+
+            <div class="paso" id="paso">
+                <h3 id="titulo-paso" tabindex="-1"></h3>
+                <p class="hechos" id="hechos-paso" hidden></p>
+                <div id="explicacion" class="explicacion"></div>
+                <div id="formulas" class="formulas"></div>
+                <div id="tablas" class="tablas"></div>
             </div>
 
             <div class="controles">
-                <button id="btn-anterior" class="btn btn-secundario" type="button">← Anterior</button>
-                <button id="btn-siguiente" class="btn" type="button">Siguiente →</button>
+                <button id="btn-anterior" class="btn btn-secundario" type="button">Anterior</button>
+                <div class="posicion-bloque">
+                    <p class="posicion" id="indicador"></p>
+                    <p class="fase-actual" id="fase-actual"></p>
+                    <p class="nota atajos">Flechas, Inicio y Fin para navegar</p>
+                </div>
+                <button id="btn-siguiente" class="btn" type="button">Siguiente</button>
             </div>
         </section>
 
