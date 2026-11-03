@@ -8,6 +8,21 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/gran_m.css') }}">
 </head>
 <body>
+    {% macro fila_restriccion(variables, valores, op, c) -%}
+    <div class="restriccion-row">
+        {% for v in variables %}
+        <input type="text" inputmode="decimal" name="a[]" value="{{ valores[loop.index0] if valores else '' }}" required> {{ v|nombre_visible }}{% if not loop.last %} +{% endif %}
+        {% endfor %}
+        <select name="op[]">
+            <option value="<=" {% if op == '<=' %}selected{% endif %}>≤</option>
+            <option value=">=" {% if op == '>=' %}selected{% endif %}>≥</option>
+            <option value="=" {% if op == '=' %}selected{% endif %}>=</option>
+        </select>
+        <input type="text" inputmode="decimal" name="b[]" value="{{ c or '' }}" required>
+        <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">Eliminar</button>
+    </div>
+    {%- endmacro %}
+
     <header class="cabecera">
         <a href="{{ url_for('index') }}" class="volver">⬅ Volver al Inicio</a>
         <h1>Módulo: Método de la Gran M</h1>
@@ -32,16 +47,42 @@
             </ol>
         </section>
 
-        <!-- 2. Formulario -->
+        <!-- 2. Contexto del ejercicio: de aquí se sacan las variables y el modelo -->
+        <section class="tarjeta" id="contexto">
+            <h2>1. Contexto del ejercicio</h2>
+            <p class="nota">
+                Escribe el ejercicio. Las líneas con la función objetivo y las restricciones (por ejemplo
+                <em>Maximizar Z = 3x + 5y</em> o <em>2x + y ≤ 18</em>) se convierten en el modelo. El texto
+                libre se ignora. Después puedes corregir el modelo abajo.
+            </p>
+            <form method="POST">
+                <textarea name="contexto" rows="7" class="contexto">{{ datos.contexto }}</textarea>
+                <button type="submit" name="accion" value="extraer" class="btn btn-secundario">Extraer modelo</button>
+            </form>
+
+            {% if avisos %}
+            <div class="avisos">
+                <strong>Revisa estas líneas, no se pudieron interpretar:</strong>
+                <ul>
+                    {% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- 3. Modelo editable y cálculo -->
         <section class="tarjeta" id="formulario">
-            <h2>Ejercicio</h2>
-            <p class="nota">Puedes cambiar los valores o agregar restricciones. El ejercicio precargado es el del enunciado.</p>
+            <h2>2. Modelo</h2>
 
             {% if error %}
                 <div class="error">{{ error }}</div>
             {% endif %}
 
+            {% if datos.variables %}
             <form method="POST">
+                <input type="hidden" name="contexto" value="{{ datos.contexto }}">
+                {% for v in datos.variables %}<input type="hidden" name="nombres[]" value="{{ v }}">{% endfor %}
+
                 <h3>Función Objetivo (Z)</h3>
                 <div class="fila-campos">
                     <select name="tipo_opt">
@@ -49,53 +90,37 @@
                         <option value="min" {% if datos.tipo_opt == 'min' %}selected{% endif %}>Minimizar</option>
                     </select>
                     <span>Z =</span>
-                    <input type="text" inputmode="decimal" name="z_x" value="{{ datos.z[0] }}" required placeholder="X1"> X1 +
-                    <input type="text" inputmode="decimal" name="z_y" value="{{ datos.z[1] }}" required placeholder="X2"> X2
+                    {% for v in datos.variables %}
+                        <input type="text" inputmode="decimal" name="z[]" value="{{ datos.z[loop.index0] }}" required> {{ v|nombre_visible }}{% if not loop.last %} +{% endif %}
+                    {% endfor %}
                 </div>
 
                 <h3>Restricciones</h3>
                 <div id="restricciones-container">
                     {% for r in datos.restricciones %}
-                    <div class="restriccion-row">
-                        <input type="text" inputmode="decimal" name="r_x[]" value="{{ r.a[0] }}" required placeholder="X1"> X1 +
-                        <input type="text" inputmode="decimal" name="r_y[]" value="{{ r.a[1] }}" required placeholder="X2"> X2
-                        <select name="r_op[]">
-                            <option value="<=" {% if r.op == '<=' %}selected{% endif %}>≤</option>
-                            <option value=">=" {% if r.op == '>=' %}selected{% endif %}>≥</option>
-                            <option value="=" {% if r.op == '=' %}selected{% endif %}>=</option>
-                        </select>
-                        <input type="text" inputmode="decimal" name="r_c[]" value="{{ r.c }}" required placeholder="C">
-                        <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">Eliminar</button>
-                    </div>
+                        {{ fila_restriccion(datos.variables, r.a, r.op, r.c) }}
                     {% endfor %}
                 </div>
 
                 <button type="button" class="btn btn-agregar" id="btn-agregar-restriccion">+ Agregar Restricción</button>
 
-                <p class="nota">Nota: X1 ≥ 0, X2 ≥ 0 se asumen por defecto.</p>
+                <p class="nota">Nota: las variables son no negativas por defecto.</p>
 
-                <button type="submit" class="btn btn-calcular">Calcular paso a paso</button>
+                <button type="submit" name="accion" value="calcular" class="btn btn-calcular">Calcular paso a paso</button>
             </form>
 
             <!-- Plantilla para agregar restricciones desde JavaScript -->
             <template id="plantilla-restriccion">
-                <div class="restriccion-row">
-                    <input type="text" inputmode="decimal" name="r_x[]" required placeholder="X1"> X1 +
-                    <input type="text" inputmode="decimal" name="r_y[]" required placeholder="X2"> X2
-                    <select name="r_op[]">
-                        <option value="<=">≤</option>
-                        <option value=">=">≥</option>
-                        <option value="=">=</option>
-                    </select>
-                    <input type="text" inputmode="decimal" name="r_c[]" required placeholder="C">
-                    <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">Eliminar</button>
-                </div>
+                {{ fila_restriccion(datos.variables, none, '<=', '') }}
             </template>
+            {% else %}
+                <p class="nota">Todavía no hay modelo. Escribe el contexto arriba y pulsa <em>Extraer modelo</em>.</p>
+            {% endif %}
         </section>
 
-        <!-- 3. Visor paso a paso (solo cuando hay resultados) -->
+        <!-- 4. Visor paso a paso (solo cuando hay resultados) -->
         <section class="tarjeta" id="visor" {% if not pasos %}hidden{% endif %}>
-            <h2>Resolución paso a paso</h2>
+            <h2>3. Resolución paso a paso</h2>
 
             <div class="barra-progreso">
                 <div id="progreso-relleno"></div>

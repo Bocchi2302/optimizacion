@@ -7,11 +7,20 @@ gran_m_bp = Blueprint('gran_m_bp', __name__)
 
 DIGITOS_SUB = str.maketrans('0123456789', '₀₁₂₃₄₅₆₇₈₉')
 SUB_A_DIGITO = str.maketrans('₀₁₂₃₄₅₆₇₈₉', '0123456789')
+OPERADORES = ('<=', '>=', '=')
 MAX_ITERACIONES = 100
 
-# Ejercicio que aparece precargado en el formulario (el mismo del enunciado)
+# Ejercicio que aparece precargado en la página
 DATOS_EJEMPLO = {
+    'contexto': (
+        'Minimizar Z = 1.5x1 + 2.5x2\n'
+        '2x1 + x2 <= 90\n'
+        'x1 + x2 >= 50\n'
+        'x1 <= 10\n'
+        'x1, x2 >= 0'
+    ),
     'tipo_opt': 'min',
+    'variables': ['x1', 'x2'],
     'z': ['1.5', '2.5'],
     'restricciones': [
         {'a': ['2', '1'], 'op': '<=', 'c': '90'},
@@ -19,6 +28,13 @@ DATOS_EJEMPLO = {
         {'a': ['1', '0'], 'op': '<=', 'c': '10'},
     ],
 }
+
+# Patrones para leer el contexto del ejercicio
+PATRON_OBJETIVO = re.compile(r'^\s*(?:(maximizar|minimizar|max|min)\s*:?\s*)?[Zz]\s*=\s*(.+)$', re.IGNORECASE)
+PATRON_SOLO_TIPO = re.compile(r'^\s*(maximizar|minimizar|max|min)\b\s*:?\s*(.+)$', re.IGNORECASE)
+PATRON_OPERADOR = re.compile(r'<=|>=|=')
+PATRON_NO_NEGATIVIDAD = re.compile(r'[A-Za-z]\d*(?:\s*,\s*[A-Za-z]\d*)*')
+PATRON_TERMINO = re.compile(r'([+-]?)\s*(\d+(?:\.\d+)?(?:/\d+)?)?\s*\*?\s*((?<![A-Za-z])[A-Za-z]\d*(?![A-Za-z]))?')
 
 
 class Num:
@@ -71,6 +87,15 @@ def _fmt_numero(x):
     return str(int(x)) if x.denominator == 1 else str(float(x))
 
 
+def texto_numero(x):
+    """Número exacto en texto para llenar el formulario (1.5, 3, 1/3)."""
+    x = F(x)
+    if x.denominator == 1:
+        return str(x.numerator)
+    decimal = str(float(x))
+    return decimal if F(decimal) == x else f'{x.numerator}/{x.denominator}'
+
+
 def fmt(n):
     """Convierte un Num a texto, por ejemplo 'M - 1.5' o '40M + 15'."""
     if n.b == 0:
@@ -84,8 +109,20 @@ def fmt(n):
     return f'{termino_m}{signo}{_fmt_numero(abs(n.a))}'
 
 
-def nombre(prefijo, indice):
-    return prefijo + str(indice).translate(DIGITOS_SUB)
+def validar_nombre(raw):
+    """Acepta letras con número opcional (x, y, x1, x2). S, A y Z están reservadas por el método."""
+    if not re.fullmatch(r'[A-Za-z]\d*', raw):
+        raise ValueError(f'"{raw}" no es un nombre de variable válido; usa letras con número, como x, y, x1 o x2.')
+    if raw[0].upper() in 'SAZ':
+        raise ValueError(f'"{raw}" está reservado por el método; usa otra letra, como x, y o x1.')
+
+
+def nombre_visible(raw):
+    """Convierte 'x1' en 'x₁' para mostrarlo en las tablas."""
+    if not raw:
+        return ''
+    raw = raw.translate(SUB_A_DIGITO)
+    return raw[0] + raw[1:].translate(DIGITOS_SUB)
 
 
 def a_latex(texto):
@@ -122,9 +159,9 @@ def normalizar(restricciones):
     return salida
 
 
-def construir_tabla(tipo, c, restricciones):
+def construir_tabla(tipo, c, restricciones, nombres):
     """Arma la tabla inicial con holguras, excesos y artificiales, y la fila Z con la penalización."""
-    columnas = ['Z'] + [nombre('x', j + 1) for j in range(len(c))]
+    columnas = ['Z'] + list(nombres)
     cont_s = cont_a = 0
     base = []
     info = []  # (a, op, b, columna_S, signo_S, columna_A)
@@ -134,14 +171,14 @@ def construir_tabla(tipo, c, restricciones):
         signo = 0
         if op in ('<=', '>='):
             cont_s += 1
-            columnas.append(nombre('S', cont_s))
+            columnas.append(f'S{cont_s}'.translate(DIGITOS_SUB))
             col_s = len(columnas) - 1
             signo = 1 if op == '<=' else -1
             if op == '<=':
                 base.append(columnas[col_s])
         if op in ('>=', '='):
             cont_a += 1
-            columnas.append(nombre('A', cont_a))
+            columnas.append(f'A{cont_a}'.translate(DIGITOS_SUB))
             col_a = len(columnas) - 1
             base.append(columnas[col_a])
         info.append((a, op, b, col_s, signo, col_a))
@@ -292,17 +329,17 @@ def _diagnostico_no_acotado(tab, base, columnas, tipo, col, numero):
     )
 
 
-def resolver(tipo, c, restricciones):
+def resolver(tipo, nombres, c, restricciones):
     """
     Resuelve un problema de programación lineal con el método de la Gran M.
-    tipo: 'min' o 'max'. c: coeficientes de la función objetivo (Fraction).
-    restricciones: lista de (coeficientes, operador, lado_derecho).
+    tipo: 'min' o 'max'. nombres: nombres visibles de las variables. c: coeficientes de la
+    función objetivo (Fraction). restricciones: lista de (coeficientes, operador, lado_derecho).
     Devuelve (pasos, mensaje). Si el problema no tiene solución óptima factible, los pasos
     llegan hasta el diagnóstico y el mensaje lo explica; si tiene solución, el mensaje es None.
     """
     invertidas = [i + 1 for i, (_, _, b) in enumerate(restricciones) if b < 0]
     restricciones = normalizar(restricciones)
-    tab, base, columnas, info = construir_tabla(tipo, c, restricciones)
+    tab, base, columnas, info = construir_tabla(tipo, c, restricciones, nombres)
     # Qué restricción creó cada variable artificial (para el diagnóstico)
     arts_restriccion = {columnas[col_a]: i for i, (*_, col_a) in enumerate(info, start=1) if col_a is not None}
     nombres_a = [columnas[col_a] for *_, col_a in info if col_a is not None]
@@ -439,16 +476,155 @@ def leer_numero(texto, contexto):
         raise ValueError(f'El valor "{texto}" en {contexto} no es un número válido.')
 
 
-def leer_formulario(form):
-    xs = form.getlist('r_x[]')
-    ys = form.getlist('r_y[]')
-    ops = form.getlist('r_op[]')
-    cs = form.getlist('r_c[]')
-    return {
-        'tipo_opt': form.get('tipo_opt', 'min'),
-        'z': [form.get('z_x', ''), form.get('z_y', '')],
+def normalizar_texto(texto):
+    """
+    Unifica la notación antes de leer una línea: delimitadores de LaTeX ($, \\( \\)),
+    comandos (\\max, \\geq, \\leq, \\cdot), símbolos (≤, ≥), subíndices (x_1, x_{1}, x₁)
+    y coma decimal.
+    """
+    texto = re.sub(r'\$+|\\\(|\\\)|\\\[|\\\]', ' ', texto)
+    texto = re.sub(r'\\(?:displaystyle|text|mathrm|mathbf)\s*\{([^}]*)\}', r'\1', texto)
+    texto = texto.replace('\\,', ' ').replace('\\cdot', '*').replace('\\times', '*')
+    texto = re.sub(r'\\geq?\b', '>=', texto)
+    texto = re.sub(r'\\leq?\b', '<=', texto)
+    texto = re.sub(r'\\(max|min)\b', r'\1', texto)
+    texto = texto.replace('≤', '<=').replace('≥', '>=').replace('=<', '<=').replace('=>', '>=')
+    texto = re.sub(r'([A-Za-z])_\{?(\d+)\}?', r'\1\2', texto)
+    texto = texto.translate(SUB_A_DIGITO)
+    return re.sub(r'(\d),(\d)', r'\1.\2', texto)
+
+
+def parsear_expresion(texto):
+    """Convierte una expresión lineal como '3x1 - 2x2 + 5' en ({variable: coeficiente}, constante)."""
+    if not texto.strip():
+        raise ValueError('falta una expresión; revisa que no falte un lado de la desigualdad')
+    if re.search(r'[A-Za-z]\d*\s+[A-Za-z]', texto):
+        raise ValueError(f'faltan signos + o - entre las variables en "{texto.strip()}"')
+    coeficientes = {}
+    constante = F(0)
+    for m in PATRON_TERMINO.finditer(texto):
+        signo, numero, variable = m.groups()
+        if numero is None and variable is None:
+            if signo:
+                raise ValueError(f'hay un signo sin término en "{texto.strip()}"')
+            continue
+        valor = F(numero) if numero else F(1)
+        if signo == '-':
+            valor = -valor
+        if variable is None:
+            constante += valor
+        else:
+            validar_nombre(variable)
+            coeficientes[variable] = coeficientes.get(variable, F(0)) + valor
+    sobrante = PATRON_TERMINO.sub('', texto).strip()
+    if sobrante:
+        raise ValueError(f'no entiendo "{sobrante}"')
+    return coeficientes, constante
+
+
+def extraer_modelo(texto):
+    """
+    Lee el contexto del ejercicio y saca la función objetivo, las variables y las restricciones.
+    Las líneas que no tienen fórmula (texto libre) se ignoran; las fórmulas que no se entienden
+    se reportan como avisos para que el usuario las corrija en el formulario.
+    Devuelve (datos para el formulario, avisos).
+    """
+    objetivo = None
+    tipo = None
+    restricciones = []
+    avisos = []
+
+    for linea in texto.splitlines():
+        # Quita etiquetas como "R₁:" o "R_2 :" antes de leer la restricción
+        t = re.sub(r'^\s*R\d*\s*:\s*', '', normalizar_texto(linea)).strip()
+        if not t:
+            continue
+        try:
+            m = PATRON_OBJETIVO.match(t)
+            if m is None:
+                m = PATRON_SOLO_TIPO.match(t)
+                if m is not None:
+                    tipo_linea, expresion = m.group(1), m.group(2)
+                else:
+                    tipo_linea = None
+            else:
+                tipo_linea, expresion = m.group(1), m.group(2)
+
+            if m is not None:
+                coef, const = parsear_expresion(expresion)
+                if const != 0:
+                    raise ValueError('la función objetivo no puede tener constante')
+                if objetivo is not None:
+                    raise ValueError('ya hay una función objetivo; se toma solo la primera')
+                objetivo = coef
+                if tipo_linea:
+                    tipo = 'max' if tipo_linea.lower().startswith('max') else 'min'
+                continue
+
+            op_m = PATRON_OPERADOR.search(t)
+            if op_m is None:
+                continue  # texto libre: no tiene fórmula
+
+            op = op_m.group(0)
+            lhs, rhs = t[:op_m.start()], t[op_m.end():]
+            if op == '>=' and rhs.strip() == '0' and PATRON_NO_NEGATIVIDAD.fullmatch(lhs.strip()):
+                continue  # x1, x2 ≥ 0: la no negatividad ya está implícita
+
+            coef_l, const_l = parsear_expresion(lhs)
+            coef_r, const_r = parsear_expresion(rhs)
+            coefs = dict(coef_l)
+            for nombre_var, valor in coef_r.items():
+                coefs[nombre_var] = coefs.get(nombre_var, F(0)) - valor
+            restricciones.append({'coefs': coefs, 'op': op, 'b': const_r - const_l})
+        except ValueError as e:
+            avisos.append(f'No se pudo interpretar la línea "{linea.strip()}": {e}.')
+
+    if objetivo is None:
+        raise ValueError('No encontré la función objetivo. Escribe una línea como "Maximizar Z = 3x + 5y".')
+    if not restricciones:
+        raise ValueError('No encontré restricciones. Escribe una por línea, por ejemplo "2x + y <= 18".')
+    if tipo is None:
+        tipo = 'max'
+        avisos.append('No indicaste si es maximizar o minimizar; se tomó maximizar. Puedes cambiarlo en el modelo.')
+
+    # Variables en el orden en que aparecen: primero las de la función objetivo
+    variables = list(objetivo.keys())
+    for r in restricciones:
+        for nombre_var in r['coefs']:
+            if nombre_var not in variables:
+                variables.append(nombre_var)
+
+    datos = {
+        'contexto': texto,
+        'tipo_opt': tipo,
+        'variables': variables,
+        'z': [texto_numero(objetivo.get(v, F(0))) for v in variables],
         'restricciones': [
-            {'a': [x, y], 'op': op, 'c': c} for x, y, op, c in zip(xs, ys, ops, cs)
+            {
+                'a': [texto_numero(r['coefs'].get(v, F(0))) for v in variables],
+                'op': r['op'],
+                'c': texto_numero(r['b']),
+            }
+            for r in restricciones
+        ],
+    }
+    return datos, avisos
+
+
+def leer_formulario(form):
+    variables = form.getlist('nombres[]')
+    n = len(variables)
+    valores_a = form.getlist('a[]')
+    ops = form.getlist('op[]')
+    bs = form.getlist('b[]')
+    return {
+        'contexto': form.get('contexto', ''),
+        'tipo_opt': form.get('tipo_opt', 'min'),
+        'variables': variables,
+        'z': form.getlist('z[]'),
+        'restricciones': [
+            {'a': valores_a[i * n:(i + 1) * n], 'op': op, 'c': b}
+            for i, (op, b) in enumerate(zip(ops, bs))
         ],
     }
 
@@ -459,6 +635,16 @@ def convertir_datos(datos):
     if tipo not in ('min', 'max'):
         raise ValueError('El tipo de optimización debe ser maximizar o minimizar.')
 
+    crudos = datos['variables']
+    if not crudos:
+        raise ValueError('No hay variables. Escribe el contexto del ejercicio y pulsa "Extraer modelo".')
+    for raw in crudos:
+        validar_nombre(raw)
+    nombres = [nombre_visible(raw) for raw in crudos]
+    n = len(crudos)
+
+    if len(datos['z']) != n:
+        raise ValueError('Faltan coeficientes en la función objetivo.')
     c = [leer_numero(t, 'la función objetivo') for t in datos['z']]
 
     if not datos['restricciones']:
@@ -466,13 +652,20 @@ def convertir_datos(datos):
 
     restricciones = []
     for i, r in enumerate(datos['restricciones'], start=1):
-        if r['op'] not in ('<=', '>=', '='):
+        if r['op'] not in OPERADORES:
             raise ValueError(f'El operador de la restricción {i} no es válido.')
+        if len(r['a']) != n:
+            raise ValueError(f'Faltan coeficientes en la restricción {i}.')
         a = [leer_numero(t, f'la restricción {i}') for t in r['a']]
         b = leer_numero(r['c'], f'la restricción {i}')
         restricciones.append((a, r['op'], b))
 
-    return tipo, c, restricciones
+    return tipo, nombres, c, restricciones
+
+
+@gran_m_bp.app_template_filter('nombre_visible')
+def filtro_nombre_visible(raw):
+    return nombre_visible(raw)
 
 
 @gran_m_bp.route('/', methods=['GET', 'POST'])
@@ -480,12 +673,20 @@ def vista_principal():
     datos = DATOS_EJEMPLO
     pasos = []
     error = None
+    avisos = []
 
-    if request.method == 'POST':
+    if request.method == 'POST' and request.form.get('accion') == 'extraer':
+        contexto = request.form.get('contexto', '')
+        try:
+            datos, avisos = extraer_modelo(contexto)
+        except ValueError as e:
+            error = str(e)
+            datos = {'contexto': contexto, 'tipo_opt': 'min', 'variables': [], 'z': [], 'restricciones': []}
+    elif request.method == 'POST':
         datos = leer_formulario(request.form)
         try:
-            tipo, c, restricciones = convertir_datos(datos)
-            pasos, error = resolver(tipo, c, restricciones)
+            tipo, nombres, c, restricciones = convertir_datos(datos)
+            pasos, error = resolver(tipo, nombres, c, restricciones)
         except ValueError as e:
             error = str(e)
 
@@ -494,4 +695,5 @@ def vista_principal():
         datos=datos,
         pasos=pasos,
         error=error,
+        avisos=avisos,
     )

@@ -339,6 +339,32 @@ body {
     display: none !important;
 }
 
+/* Contexto del ejercicio */
+.contexto {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: Consolas, monospace;
+    font-size: 14px;
+    resize: vertical;
+    margin-bottom: 12px;
+}
+
+.avisos {
+    margin-top: 16px;
+    padding: 12px 15px;
+    background: #fff3cd;
+    border: 1px solid #ffeeba;
+    border-radius: 5px;
+    color: #856404;
+}
+
+.avisos ul {
+    margin: 8px 0 0;
+    padding-left: 20px;
+}
+
 /* Responsive */
 @media (max-width: 600px) {
     body {
