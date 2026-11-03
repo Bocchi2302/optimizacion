@@ -1,0 +1,163 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 24px;
+    color: #333;
+    font-family: Arial, sans-serif;
+    background-color: #f8f9fa;
+}
+
+.enlace-inicio {
+    color: #007bff;
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.titulo-modulo {
+    margin-top: 20px;
+}
+
+.contenedor-principal {
+    display: grid;
+    grid-template-columns: minmax(320px, 1fr) minmax(320px, 1.5fr);
+    gap: 24px;
+    align-items: start;
+}
+
+.formulario,
+.grafica-container {
+    padding: 20px;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+}
+
+.subtitulo-formulario,
+.subtitulo-seccion {
+    margin-top: 0;
+}
+
+.funcion-objetivo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.campo-contexto {
+    width: 100%;
+    min-height: 100px;
+    margin-bottom: 20px;
+    padding: 8px;
+    resize: vertical;
+}
+
+.restriccion-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+}
+
+input,
+select,
+button {
+    font: inherit;
+}
+
+input,
+select {
+    min-width: 70px;
+    padding: 6px;
+}
+
+button {
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+}
+
+.btn-agregar {
+    margin-top: 8px;
+    background-color: #6c757d;
+}
+
+.btn-calcular {
+    background-color: #007bff;
+}
+
+.nota-no-negatividad {
+    color: #555;
+    font-size: 0.9em;
+}
+
+.grafica {
+    max-width: 100%;
+    border-radius: 4px;
+}
+
+.resultados-container {
+    margin-top: 20px;
+    padding: 16px;
+    color: #155724;
+    background-color: #d4edda;
+    border: 1px solid #c3e6cb;
+    border-radius: 4px;
+}
+
+.subtitulo-resultados {
+    margin-top: 0;
+}
+
+.subtitulo-vertices {
+    margin-top: 20px;
+    margin-bottom: 5px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    color: #333;
+}
+
+th,
+td {
+    padding: 8px;
+    border: 1px solid #dee2e6;
+    text-align: center;
+}
+
+th {
+    background-color: #e9ecef;
+}
+
+.row-optimo {
+    font-weight: bold;
+    background-color: #fff3cd;
+}
+
+.error {
+    margin: 16px 0;
+    padding: 12px;
+    color: #721c24;
+    background-color: #f8d7da;
+    border: 1px solid #f5c6cb;
+    border-radius: 4px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 16px;
+    }
+
+    .contenedor-principal {
+        grid-template-columns: 1fr;
+    }
+}
