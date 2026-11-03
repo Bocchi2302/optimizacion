@@ -328,6 +328,10 @@ a {
     line-height: 1.5;
 }
 
+.modelo > .nota {
+    margin-top: var(--esp-2);
+}
+
 .modelo-cabeza {
     display: flex;
     flex-wrap: wrap;
@@ -576,6 +580,12 @@ a {
 
 .panel-modelo > summary {
     font-family: var(--fuente-texto);
+}
+
+/* En móvil la fórmula se parte dentro de su espacio; la flecha se queda a su lado */
+#resumen-modelo {
+    flex: 1 1 12rem;
+    min-width: 0;
 }
 
 .resumen-accion {
