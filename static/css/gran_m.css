@@ -16,6 +16,11 @@
     --dorado-texto: #7a5a00;
     --vino-m: #8a1c5a;
 
+    /* Página: retícula de tabla Simplex sobre tinta; el trabajo va sobre papel */
+    --reticula: rgb(255 255 255 / 0.055);
+    --celda-reticula: 72px;
+    --texto-sobre-tinta: #cbd5e1;
+
     /* Estructura */
     --niebla: #f1f4f8;
     --linea: #d9dfe7;
@@ -61,6 +66,7 @@
     /* Radios y objetivos táctiles */
     --radio-s: 4px;
     --radio-m: 6px;
+    --radio-l: 12px;
     --tactil: 44px;
 }
 
@@ -75,7 +81,11 @@ html {
 
 body {
     margin: 0;
-    background: var(--papel);
+    background-color: var(--tinta);
+    background-image:
+        linear-gradient(var(--reticula) 1px, transparent 1px),
+        linear-gradient(90deg, var(--reticula) 1px, transparent 1px);
+    background-size: var(--celda-reticula) var(--celda-reticula);
     color: var(--tinta);
     font-family: var(--fuente-texto);
     font-size: var(--texto-cuerpo);
@@ -133,7 +143,7 @@ a {
 .cabecera,
 .hoja {
     width: 100%;
-    max-width: 1120px;
+    max-width: 1200px;
     margin-inline: auto;
     padding-inline: var(--margen-hoja);
 }
@@ -145,7 +155,11 @@ a {
     justify-content: space-between;
     gap: var(--esp-3);
     padding-block: var(--esp-3);
-    border-bottom: 1px solid var(--linea);
+    color: var(--papel);
+}
+
+.cabecera :focus-visible {
+    outline-color: var(--papel);
 }
 
 .marca {
@@ -163,24 +177,76 @@ a {
     display: inline-flex;
     align-items: center;
     min-height: var(--tactil);
-    color: var(--pizarra-honda);
+    color: var(--texto-sobre-tinta);
     font-size: 0.9375rem;
     font-weight: 500;
     text-underline-offset: 3px;
 }
 
 .volver:hover {
-    color: var(--tinta);
+    color: var(--papel);
 }
 
 .hoja {
-    padding-block: var(--esp-5) var(--esp-7);
+    padding-block: 0 var(--esp-7);
+}
+
+/* Portada: la M llena es la penalización activa; al salir la última artificial
+   queda solo su contorno */
+.portada {
+    position: relative;
+    min-height: clamp(7.5rem, 20vw, 12rem);
+    padding: var(--esp-5) clamp(6rem, 26vw, 18rem) var(--esp-5) 0;
+    color: var(--papel);
+}
+
+.portada::after {
+    content: 'M';
+    position: absolute;
+    right: 0;
+    bottom: -0.17em;
+    color: var(--dorado);
+    font-family: var(--fuente-titulo);
+    font-size: clamp(6.5rem, 22vw, 15rem);
+    font-weight: 600;
+    line-height: 1;
+    -webkit-text-stroke: 2px var(--dorado);
+    transition: color 0.6s ease;
+    pointer-events: none;
+}
+
+[data-penalizacion="saldada"] .portada::after {
+    color: transparent;
+}
+
+.portada h1 {
+    font-size: clamp(1.875rem, 5vw, 3rem);
 }
 
 .bajada {
-    max-width: 68ch;
+    max-width: 52ch;
     margin-top: var(--esp-2);
-    color: var(--pizarra-honda);
+    color: var(--texto-sobre-tinta);
+}
+
+/* Lámina: la superficie de trabajo, la única sobre papel */
+.lamina {
+    position: relative;
+    padding: var(--esp-2) var(--esp-6) var(--esp-5);
+    border-radius: var(--radio-l);
+    background: var(--papel);
+}
+
+@media (max-width: 640px) {
+    .lamina {
+        margin-inline: calc(-1 * var(--margen-hoja));
+        padding-inline: var(--margen-hoja);
+        border-radius: var(--radio-l) var(--radio-l) 0 0;
+    }
+
+    .hoja {
+        padding-bottom: 0;
+    }
 }
 
 /* Bloques plegables: teoría y modelo */
@@ -217,10 +283,6 @@ a {
     transform: rotate(90deg);
 }
 
-.teoria {
-    margin-top: var(--esp-5);
-    border-top: 1px solid var(--linea);
-}
 
 .teoria-cuerpo {
     max-width: 68ch;
@@ -455,6 +517,17 @@ a {
     text-decoration: underline;
     text-underline-offset: 3px;
     cursor: pointer;
+}
+
+@media (min-width: 641px) {
+    /* Columna fija: la marca "lleva A₁" puede faltar y no debe mover el botón */
+    .btn-eliminar {
+        grid-column: 4;
+    }
+
+    .lleva {
+        grid-column: 3;
+    }
 }
 
 .btn-eliminar:hover:not(:disabled) {

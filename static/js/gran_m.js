@@ -434,6 +434,7 @@
             } else {
                 fila.classList.add('saliendo');
                 fila.addEventListener('animationend', quitar, { once: true });
+                setTimeout(quitar, 300); // respaldo si el navegador no emite animationend
             }
             actualizar();
 
@@ -1158,6 +1159,7 @@
             mostrarHechos(iteracion);
             actualizarFases();
             actualizarContador(opciones.animar);
+            document.body.dataset.penalizacion = derivados[indiceActual].artificialesEnBase.length > 0 ? 'activa' : 'saldada';
 
             elementos.explicacion.innerHTML = resaltarTerminosM(acortarDecimales(paso.explicacion));
 
