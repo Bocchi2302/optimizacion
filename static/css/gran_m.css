@@ -900,3 +900,276 @@ html {
         padding-inline: var(--esp-3);
     }
 }
+
+/* ── Tablas ─────────────────────────────────────────── */
+.control-tablas {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-2) var(--esp-4);
+    margin-top: var(--esp-4);
+}
+
+.selector {
+    display: inline-flex;
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--radio-s);
+}
+
+.selector button {
+    min-width: var(--tactil);
+    min-height: var(--tactil);
+    padding-inline: var(--esp-3);
+    border: 0;
+    background: transparent;
+    color: var(--tinta);
+    font: inherit;
+    font-size: 0.9375rem;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.selector button:hover {
+    background: var(--niebla);
+}
+
+.selector button[aria-pressed="true"] {
+    background: var(--tinta);
+    color: var(--papel);
+}
+
+.conteo-cambios {
+    color: var(--pizarra-honda);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.tablas {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--esp-4);
+    margin-top: var(--esp-3);
+}
+
+.tablas:empty {
+    display: none;
+}
+
+@media (min-width: 1040px) {
+    .tablas.juntas.lado-a-lado {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+.bloque-tabla {
+    min-width: 0;
+}
+
+.bloque-tabla h4 {
+    margin-bottom: var(--esp-2);
+    font-size: 1rem;
+}
+
+.tabla-marco {
+    position: relative;
+}
+
+.tabla-envoltorio {
+    position: relative; /* contiene los textos solo-lector de las celdas */
+    overflow-x: auto;
+    border: 1px solid var(--linea);
+    border-radius: var(--radio-s);
+}
+
+/* Sombra lateral: solo aparece si queda contenido por desplazar */
+.tabla-marco::after {
+    content: '';
+    position: absolute;
+    inset-block: 1px;
+    right: 1px;
+    z-index: 2;
+    width: 14px;
+    background: linear-gradient(to left, rgb(26 26 46 / 0.22), transparent);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.tabla-marco.hay-derecha::after {
+    opacity: 1;
+}
+
+.pista-desliza {
+    margin-top: var(--esp-1);
+}
+
+.tabla-simplex {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--texto-tabla);
+    font-weight: 500;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Fondo y reglas por variable: las clases de pivote tienen igual especificidad
+   y gana la última, en vez de competir por selectores más largos */
+.tabla-simplex th,
+.tabla-simplex td {
+    padding: var(--esp-2) var(--esp-3);
+    border-bottom: 1px solid var(--linea);
+    background-color: var(--fondo-celda, var(--papel));
+    box-shadow: var(--reglas-celda, none);
+    text-align: right;
+    vertical-align: bottom;
+    white-space: nowrap;
+}
+
+.tabla-simplex tbody tr:last-child > * {
+    border-bottom: 0;
+}
+
+.tabla-simplex thead th {
+    --fondo-celda: var(--niebla);
+    font-weight: 600;
+}
+
+/* La fila Z no es una restricción, y la columna Solución no es un coeficiente */
+.tabla-simplex .fila-z > * {
+    border-bottom: 2px solid var(--pizarra);
+}
+
+.col-solucion {
+    border-left: 1px solid var(--linea-fuerte);
+}
+
+.col-artificial {
+    color: var(--vino-m);
+}
+
+.fila-pivote > * {
+    --fondo-celda: var(--fila-pivote);
+    --reglas-celda: inset 0 2px 0 var(--fila-pivote-regla), inset 0 -2px 0 var(--fila-pivote-regla);
+}
+
+.columna-pivote {
+    --fondo-celda: var(--columna-pivote);
+    --reglas-celda: inset 2px 0 0 var(--columna-pivote-regla), inset -2px 0 0 var(--columna-pivote-regla);
+}
+
+.elemento-pivote {
+    --fondo-celda: var(--elemento-pivote);
+    --reglas-celda: none;
+    color: var(--papel);
+    font-weight: 600;
+}
+
+.etiqueta-pivote,
+.marca-eje {
+    display: block;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.marca-eje {
+    color: var(--columna-pivote-regla);
+}
+
+.celda-base .marca-eje {
+    color: var(--fila-pivote-regla);
+}
+
+.termino-m {
+    color: var(--vino-m);
+    font-weight: 600;
+}
+
+/* Celda cambiada: tono, esquina dorada y "cambió" para lector de pantalla */
+.cambiada {
+    --fondo-celda: var(--celda-cambiada);
+    background-image: linear-gradient(225deg, var(--dorado) 7px, transparent 7px);
+}
+
+/* Base fija al desplazar */
+.tabla-simplex .celda-base {
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    text-align: left;
+    font-weight: 600;
+}
+
+.celda-base::after {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    right: -8px;
+    width: 8px;
+    background: linear-gradient(to right, rgb(26 26 46 / 0.18), transparent);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.hay-izquierda .celda-base::after {
+    opacity: 1;
+}
+
+.base-salida {
+    display: block;
+    color: var(--pizarra-honda);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1) var(--esp-4);
+    margin: var(--esp-3) 0 0;
+    padding: 0;
+    color: var(--pizarra-honda);
+    font-size: var(--texto-nota);
+    font-weight: 500;
+    list-style: none;
+}
+
+.leyenda li {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+}
+
+.muestra {
+    width: 1.5rem;
+    height: 1rem;
+    border-radius: 2px;
+}
+
+.muestra-fila {
+    background: var(--fila-pivote);
+    box-shadow: inset 0 2px 0 var(--fila-pivote-regla), inset 0 -2px 0 var(--fila-pivote-regla);
+}
+
+.muestra-columna {
+    background: var(--columna-pivote);
+    box-shadow: inset 2px 0 0 var(--columna-pivote-regla), inset -2px 0 0 var(--columna-pivote-regla);
+}
+
+.muestra-elemento {
+    background: var(--elemento-pivote);
+}
+
+.muestra-cambio {
+    background: linear-gradient(225deg, var(--dorado) 7px, var(--celda-cambiada) 7px);
+    box-shadow: inset 0 0 0 1px var(--linea);
+}
+
+@media (max-width: 720px) {
+    .tabla-simplex th,
+    .tabla-simplex td {
+        padding-inline: var(--esp-2);
+    }
+}

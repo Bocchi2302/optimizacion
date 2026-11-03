@@ -187,7 +187,22 @@
                 <p class="hechos" id="hechos-paso" hidden></p>
                 <div id="explicacion" class="explicacion"></div>
                 <div id="formulas" class="formulas"></div>
+                <div class="control-tablas" id="control-tablas" hidden>
+                    <div class="selector" role="group" aria-label="Tablas a la vista">
+                        <button type="button" data-vista="juntas" aria-pressed="true">Juntas</button>
+                        <button type="button" data-vista="antes" aria-pressed="false">Antes</button>
+                        <button type="button" data-vista="despues" aria-pressed="false">Después</button>
+                    </div>
+                    <p class="conteo-cambios" id="conteo-cambios"></p>
+                </div>
                 <div id="tablas" class="tablas"></div>
+                <ul class="leyenda" id="leyenda" hidden>
+                    <li data-leyenda="fila"><span class="muestra muestra-fila"></span>Fila que sale</li>
+                    <li data-leyenda="columna"><span class="muestra muestra-columna"></span><span id="leyenda-columna">Columna que entra</span></li>
+                    <li data-leyenda="elemento"><span class="muestra muestra-elemento"></span>Elemento pivote</li>
+                    <li data-leyenda="cambio"><span class="muestra muestra-cambio"></span>Celda que cambió</li>
+                    <li data-leyenda="m"><span class="termino-m">M</span>Término con penalización</li>
+                </ul>
             </div>
 
             <div class="controles">

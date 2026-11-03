@@ -487,6 +487,11 @@
         return texto.replace(/-?\d+\.\d{5,}/g, acortarNumero);
     }
 
+    // Solo el coeficiente citado entre paréntesis: "(40M + 15)". El resto de las M vive en KaTeX
+    function resaltarTerminosM(html) {
+        return html.replace(/\((-?[\d.]*M)((?: [+-] [\d.]+)?)\)/g, '(<span class="termino-m">$1</span>$2)');
+    }
+
     function iniciarVisor() {
         // Datos generados por Python: lista de pasos con títulos, explicaciones, tablas y pivote
         const pasos = JSON.parse(document.getElementById('datos-pasos').textContent);
@@ -508,11 +513,17 @@
             explicacion: document.getElementById('explicacion'),
             formulas: document.getElementById('formulas'),
             tablas: document.getElementById('tablas'),
+            controlTablas: document.getElementById('control-tablas'),
+            conteoCambios: document.getElementById('conteo-cambios'),
+            botonesVista: Array.from(document.querySelectorAll('[data-vista]')),
+            leyenda: document.getElementById('leyenda'),
+            leyendaColumna: document.getElementById('leyenda-columna'),
             anterior: document.getElementById('btn-anterior'),
             siguiente: document.getElementById('btn-siguiente')
         };
 
         let indiceActual = 0;
+        let vista = 'juntas';
 
         // Datos derivados de cada paso, sin tocar el contrato del solver
         const tablaInicial = pasos.find(function (paso) { return paso.tabla; }).tabla;
@@ -701,70 +712,316 @@
             elementos.anuncio.textContent = texto;
         }
 
-        // Construye una tabla Simplex y aplica las clases de resaltado del pivote
-        function crearTabla(datos, pivote, etiqueta) {
+        function aMenos(texto) {
+            return texto.replace(/^-/, '−');
+        }
+
+        // Escribe un valor de celda: "40M + 15" separa el término con M; los decimales
+        // largos se acortan y el valor exacto queda en title y para el lector de pantalla.
+        function pintarValor(celda, crudo) {
+            const conM = /^(-?(?:[\d.]+(?:e[+-]?\d+)?)?)M(?: ([+-]) (.+))?$/.exec(crudo);
+            const visible = document.createElement('span');
+            let acortado = false;
+
+            function numero(texto) {
+                const corto = acortarNumero(texto);
+                acortado = acortado || corto !== texto;
+                return corto;
+            }
+
+            if (conM) {
+                const coeficiente = conM[1] === '-' || conM[1] === '' ? conM[1] : numero(conM[1]);
+                const termino = document.createElement('span');
+                termino.className = 'termino-m';
+                termino.textContent = `${aMenos(coeficiente)}M`;
+                visible.appendChild(termino);
+                if (conM[2]) {
+                    visible.append(` ${conM[2] === '-' ? '−' : '+'} ${numero(conM[3])}`);
+                }
+            } else {
+                visible.textContent = aMenos(numero(crudo));
+            }
+
+            celda.appendChild(visible);
+            if (acortado) {
+                celda.title = crudo;
+                visible.setAttribute('aria-hidden', 'true');
+                const exacto = document.createElement('span');
+                exacto.className = 'solo-lector';
+                exacto.textContent = crudo;
+                celda.appendChild(exacto);
+            }
+        }
+
+        function marcaEje(texto) {
+            const marca = document.createElement('span');
+            marca.className = 'marca-eje';
+            marca.textContent = texto;
+            return marca;
+        }
+
+        function textoOculto(texto) {
+            const oculto = document.createElement('span');
+            oculto.className = 'solo-lector';
+            oculto.textContent = texto;
+            return oculto;
+        }
+
+        function revisarDesborde(marco) {
+            const envoltorio = marco.querySelector('.tabla-envoltorio');
+            const pista = marco.parentElement.querySelector('.pista-desliza');
+            const hay = envoltorio.scrollWidth > envoltorio.clientWidth + 1;
+            const fin = envoltorio.scrollWidth - envoltorio.clientWidth - 1;
+            marco.classList.toggle('hay-izquierda', hay && envoltorio.scrollLeft > 1);
+            marco.classList.toggle('hay-derecha', hay && envoltorio.scrollLeft < fin);
+            pista.hidden = !hay;
+            if (hay) {
+                envoltorio.tabIndex = 0;
+                envoltorio.setAttribute('role', 'region');
+                envoltorio.setAttribute('aria-label', 'Tabla con desplazamiento horizontal');
+            } else {
+                envoltorio.removeAttribute('tabindex');
+                envoltorio.removeAttribute('role');
+                envoltorio.removeAttribute('aria-label');
+            }
+        }
+
+        function revisarTodosLosDesbordes() {
+            elementos.tablas.querySelectorAll('.tabla-marco').forEach(revisarDesborde);
+        }
+
+        // opciones: etiqueta, rol ("antes" o "despues"), pivote, previa (tabla anterior
+        // para comparar celdas) y animar (dibuja el tachado de la artificial que sale)
+        function crearTabla(datos, opciones) {
+            const pivote = opciones.pivote;
+            const previa = opciones.previa;
             const bloque = document.createElement('div');
             bloque.className = 'bloque-tabla';
+            if (opciones.rol) {
+                bloque.dataset.rol = opciones.rol;
+            }
 
-            if (etiqueta) {
+            if (opciones.etiqueta) {
                 const titulo = document.createElement('h4');
-                titulo.textContent = etiqueta;
+                titulo.textContent = opciones.etiqueta;
                 bloque.appendChild(titulo);
             }
 
+            const marco = document.createElement('div');
+            marco.className = 'tabla-marco';
             const envoltorio = document.createElement('div');
             envoltorio.className = 'tabla-envoltorio';
+            envoltorio.addEventListener('scroll', function () {
+                revisarDesborde(marco);
+            }, { passive: true });
 
             const tabla = document.createElement('table');
             tabla.className = 'tabla-simplex';
 
+            const titulo = tabla.createCaption();
+            titulo.className = 'solo-lector';
+            titulo.textContent = opciones.etiqueta || 'Tabla Simplex';
+
+            // El mismo ancho en ambas tablas: una columna se compara a la misma altura visual
+            const columnas = document.createElement('colgroup');
+            opciones.anchos.forEach(function (ancho) {
+                const columna = document.createElement('col');
+                columna.style.width = `calc(${ancho}ch + 1.5rem)`;
+                columnas.appendChild(columna);
+            });
+            tabla.appendChild(columnas);
+
+            // Encabezado: la columna 0 es "Base"; las columnas de datos van desde la 1
             const encabezado = tabla.createTHead().insertRow();
             ['Base'].concat(datos.columnas).forEach(function (texto, j) {
                 const th = document.createElement('th');
+                th.scope = 'col';
                 th.textContent = texto;
+                if (j === 0) {
+                    th.classList.add('celda-base');
+                }
+                if (esArtificial(texto)) {
+                    th.classList.add('col-artificial');
+                }
+                if (j === datos.columnas.length) {
+                    th.classList.add('col-solucion');
+                }
                 if (pivote && j - 1 === pivote.columna) {
                     th.classList.add('columna-pivote');
+                    th.appendChild(marcaEje(pivote.fila === null ? 'sin límite' : 'entra'));
                 }
                 encabezado.appendChild(th);
             });
 
+            // Cuerpo: fila i (0 = Z) y columna j (0 = Z, ..., última = Solución)
             const cuerpo = tabla.createTBody();
             datos.filas.forEach(function (fila, i) {
                 const tr = cuerpo.insertRow();
+                if (i === 0) {
+                    tr.classList.add('fila-z');
+                }
                 if (pivote && i === pivote.fila) {
                     tr.classList.add('fila-pivote');
                 }
 
-                const celdaBase = tr.insertCell();
-                celdaBase.textContent = fila.base;
+                const celdaBase = document.createElement('th');
+                celdaBase.scope = 'row';
                 celdaBase.className = 'celda-base';
+                celdaBase.textContent = fila.base;
+                if (esArtificial(fila.base)) {
+                    celdaBase.classList.add('col-artificial');
+                }
+                if (pivote && i === pivote.fila) {
+                    celdaBase.appendChild(marcaEje('sale'));
+                }
+                if (previa && previa.filas[i].base !== fila.base) {
+                    const anterior = previa.filas[i].base;
+                    celdaBase.classList.add('cambiada');
+                    if (esArtificial(anterior)) {
+                        const salida = document.createElement('span');
+                        salida.className = 'base-salida';
+                        const nombre = document.createElement('span');
+                        nombre.className = opciones.animar ? 'tachada animar' : 'tachada';
+                        nombre.textContent = anterior;
+                        salida.append('sale ', nombre);
+                        celdaBase.appendChild(salida);
+                    }
+                }
+                tr.appendChild(celdaBase);
 
                 fila.celdas.forEach(function (valor, j) {
                     const td = tr.insertCell();
-                    td.textContent = valor;
-                    if (pivote && j === pivote.columna) {
+                    const esElemento = pivote && i === pivote.fila && j === pivote.columna;
+                    if (esElemento) {
+                        const etiqueta = document.createElement('span');
+                        etiqueta.className = 'etiqueta-pivote';
+                        etiqueta.textContent = 'pivote';
+                        td.appendChild(etiqueta);
+                        td.classList.add('elemento-pivote');
+                    }
+                    pintarValor(td, valor);
+                    if (pivote && j === pivote.columna && !esElemento) {
                         td.classList.add('columna-pivote');
                     }
-                    if (pivote && i === pivote.fila && j === pivote.columna) {
-                        td.classList.add('elemento-pivote');
+                    if (j === fila.celdas.length - 1) {
+                        td.classList.add('col-solucion');
+                    }
+                    if (previa && previa.filas[i].celdas[j] !== valor) {
+                        td.classList.add('cambiada');
+                        td.appendChild(textoOculto(', cambió'));
                     }
                 });
             });
 
             envoltorio.appendChild(tabla);
-            bloque.appendChild(envoltorio);
+            marco.appendChild(envoltorio);
+            bloque.appendChild(marco);
+
+            const pista = document.createElement('p');
+            pista.className = 'nota pista-desliza';
+            pista.textContent = 'Desliza la tabla para ver todas las columnas.';
+            pista.hidden = true;
+            bloque.appendChild(pista);
             return bloque;
         }
 
-        function dibujarTablas(paso) {
+        function anchosDeColumna(tablas) {
+            const anchos = ['Base'].concat(tablas[0].columnas).map(function (texto) {
+                return Math.max(texto.length, 4);
+            });
+            tablas.forEach(function (tabla) {
+                tabla.filas.forEach(function (fila) {
+                    anchos[0] = Math.max(anchos[0], fila.base.length);
+                    fila.celdas.forEach(function (valor, j) {
+                        anchos[j + 1] = Math.max(anchos[j + 1], acortarDecimales(valor).length);
+                    });
+                });
+            });
+            if (tablas.length > 1) {
+                anchos[0] = Math.max(anchos[0], 'sale A₁'.length);
+            }
+            return anchos;
+        }
+
+        function contarCambios(antes, despues) {
+            let cambios = 0;
+            despues.filas.forEach(function (fila, i) {
+                fila.celdas.forEach(function (valor, j) {
+                    if (antes.filas[i].celdas[j] !== valor) {
+                        cambios += 1;
+                    }
+                });
+            });
+            return cambios;
+        }
+
+        function aplicarVista() {
+            elementos.botonesVista.forEach(function (boton) {
+                boton.setAttribute('aria-pressed', String(boton.dataset.vista === vista));
+            });
+            elementos.tablas.querySelectorAll('.bloque-tabla[data-rol]').forEach(function (bloque) {
+                bloque.hidden = vista !== 'juntas' && bloque.dataset.rol !== vista;
+            });
+            elementos.tablas.classList.toggle('juntas', vista === 'juntas');
+            revisarTodosLosDesbordes();
+        }
+
+        function actualizarLeyenda(paso) {
+            const tablas = [paso.tabla, paso.tabla_resultado].filter(Boolean);
+            const hayM = tablas.some(function (tabla) {
+                return tabla.filas.some(function (fila) {
+                    return fila.celdas.some(function (valor) { return valor.includes('M'); });
+                });
+            });
+            const pivote = paso.pivote;
+            const visibles = {
+                fila: Boolean(pivote) && pivote.fila !== null,
+                columna: Boolean(pivote),
+                elemento: Boolean(pivote) && pivote.fila !== null,
+                cambio: Boolean(paso.tabla_resultado),
+                m: hayM
+            };
+            elementos.leyendaColumna.textContent = pivote && pivote.fila === null
+                ? 'Columna sin límite'
+                : 'Columna que entra';
+            let alguna = false;
+            elementos.leyenda.querySelectorAll('[data-leyenda]').forEach(function (item) {
+                item.hidden = !visibles[item.dataset.leyenda];
+                alguna = alguna || !item.hidden;
+            });
+            elementos.leyenda.hidden = !alguna;
+        }
+
+        function dibujarTablas(paso, animar) {
+            const comparar = Boolean(paso.tabla_resultado);
             elementos.tablas.replaceChildren();
+            elementos.controlTablas.hidden = !comparar;
+            elementos.tablas.classList.toggle('lado-a-lado', comparar && paso.tabla.columnas.length <= 7);
+            const anchos = paso.tabla ? anchosDeColumna([paso.tabla, paso.tabla_resultado].filter(Boolean)) : [];
+
             if (paso.tabla) {
-                const etiqueta = paso.tabla_resultado ? 'Antes del pivoteo' : null;
-                elementos.tablas.appendChild(crearTabla(paso.tabla, paso.pivote, etiqueta));
+                elementos.tablas.appendChild(crearTabla(paso.tabla, {
+                    etiqueta: comparar ? 'Antes del pivoteo' : null,
+                    rol: comparar ? 'antes' : null,
+                    pivote: paso.pivote,
+                    anchos: anchos
+                }));
             }
-            if (paso.tabla_resultado) {
-                elementos.tablas.appendChild(crearTabla(paso.tabla_resultado, null, 'Después del pivoteo'));
+            if (comparar) {
+                const cambios = contarCambios(paso.tabla, paso.tabla_resultado);
+                elementos.conteoCambios.textContent = cambios === 1
+                    ? '1 celda cambió'
+                    : `${cambios} celdas cambiaron`;
+                elementos.tablas.appendChild(crearTabla(paso.tabla_resultado, {
+                    etiqueta: 'Después del pivoteo',
+                    rol: 'despues',
+                    previa: paso.tabla,
+                    animar: animar,
+                    anchos: anchos
+                }));
             }
+            actualizarLeyenda(paso);
+            aplicarVista();
         }
 
         function mostrarPaso(opciones) {
@@ -778,7 +1035,7 @@
             actualizarFases();
             actualizarContador(opciones.animar);
 
-            elementos.explicacion.innerHTML = acortarDecimales(paso.explicacion);
+            elementos.explicacion.innerHTML = resaltarTerminosM(acortarDecimales(paso.explicacion));
 
             elementos.formulas.replaceChildren();
             paso.formulas.forEach(function (texto) {
@@ -828,6 +1085,18 @@
             elementos.irDiagnostico.addEventListener('click', function () {
                 irA(pasos.length - 1);
             });
+        }
+
+        elementos.botonesVista.forEach(function (boton) {
+            boton.addEventListener('click', function () {
+                vista = boton.dataset.vista;
+                aplicarVista();
+            });
+        });
+
+        window.addEventListener('resize', revisarTodosLosDesbordes);
+        if (document.fonts && document.fonts.ready) {
+            document.fonts.ready.then(revisarTodosLosDesbordes);
         }
 
         // Las flechas no secuestran la escritura ni el desplazamiento de una tabla
