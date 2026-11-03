@@ -6,6 +6,7 @@ from blueprints.gran_m_bp import gran_m_bp
 from blueprints.vogel_bp import vogel_bp
 from blueprints.regresion_bp import regresion_bp
 from blueprints.simplex_bp import simplex_bp
+from blueprints.dos_fases_bp import dos_fases_bp
 
 app = Flask(__name__)
 
@@ -21,6 +22,9 @@ app.register_blueprint(gran_m_bp, url_prefix='/metodo_gran_m')
 app.register_blueprint(vogel_bp, url_prefix='/metodo_vogel')
 app.register_blueprint(regresion_bp, url_prefix='/regresion_simplex')
 app.register_blueprint(simplex_bp, url_prefix='/metodo_simplex')
+
+# Registrar el Blueprint del Método de las Dos Fases
+app.register_blueprint(dos_fases_bp, url_prefix='/metodo_dos_fases')
 
 # Ruta raíz: No usar 
 @app.route('/')

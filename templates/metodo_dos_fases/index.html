@@ -1,0 +1,214 @@
+{#- ===================================================================
+    Método de las Dos Fases · «ruta al óptimo»
+    Diseño: archivo de Figma «Dos Fases · Módulo OptiLab», páginas v2.
+    Este archivo contiene la página (formulario, recorrido guiado) y las
+    macros del informe (tablas, operaciones, bitácora, resultados y conclusión),
+    que también usa el informe HTML descargable.
+=================================================================== -#}
+{%- macro icono(kind) -%}
+{%- set d = {'hecho':'M4 20h4L18.5 9.5l-4-4L4 16v4z M13.5 6.5l4 4','lectura':'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z','entra':'M4 12h15 M13 6l6 6-6 6','sale':'M20 12H5 M11 6l-6 6 6 6','conclusion':'M5 13l4 4L19 7'}[kind] -%}
+<svg class="df-ico" viewBox="0 0 24 24" width="15" height="15" aria-hidden="true" focusable="false"><path d="{{ d }}" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+{%- endmacro -%}
+{%- macro logo(size=32) -%}
+<svg class="df-logo" width="{{ size }}" height="{{ size }}" viewBox="0 0 32 32" aria-hidden="true" focusable="false"><path d="M6 25 L14.5 15" stroke="#A13F1A" stroke-width="2.4" stroke-linecap="round" stroke-dasharray="2.5 3" fill="none"/><path d="M14.5 15 L25.5 7" stroke="#2E5E3E" stroke-width="2.6" stroke-linecap="round" fill="none"/><circle cx="6" cy="25" r="3.4" fill="#FFFCF5" stroke="#A13F1A" stroke-width="2.2"/><circle cx="14.5" cy="15" r="3.4" fill="#2E5E3E"/><circle cx="25.5" cy="7" r="4.4" fill="#D9A21B" stroke="#26201A" stroke-width="1.6"/></svg>
+{%- endmacro -%}
+{%- macro tableau(event, hl, fmt) -%}
+<div class="df-tableau-wrap">
+<div class="df-table-scroll" tabindex="0" role="region" aria-label="Tabla {{ event.number }}; desplaza horizontalmente si es necesario">
+<table class="df-table df-tableau"><caption>Tabla {{ event.number }}{% if hl and hl.row > 0 %} · pivote encerrado en azul{% elif hl %} · columna que entra en azul{% endif %}</caption>
+<thead><tr><th scope="col">VB</th>{% for name in event.columns %}<th scope="col"{% if hl and loop.index0==hl.col %} class="df-col-pivot"{% endif %}>{{ name }}</th>{% endfor %}<th scope="col">K</th></tr></thead>
+<tbody>{% for row in event.tableau %}{% set ri=loop.index0 %}
+<tr class="{{ 'df-objective' if ri==0 else '' }} {{ 'df-row-pivot' if hl and hl.row>0 and ri==hl.row else '' }}">
+<th scope="row">{{ event.objective_label if ri==0 else event.basis[ri-1] }}</th>
+{% for v in row %}{% set es_pivote = hl and hl.row>0 and loop.index0==hl.col and ri==hl.row %}<td class="{{ 'df-col-pivot' if hl and loop.index0==hl.col else '' }} {{ 'df-pivot' if es_pivote else '' }} {{ 'df-rhs' if loop.last else '' }}"{% if es_pivote %} aria-label="Pivote {{ fmt(v) }}"{% endif %}><span>{{ fmt(v) }}</span></td>{% endfor %}</tr>
+{% endfor %}</tbody></table></div>
+<p class="df-hint">desliza la tabla →</p></div>
+{%- endmacro -%}
+{%- macro unit_of(u) -%}{% if u %} {{ u }}{% endif %}{%- endmacro -%}
+{%- macro decision(p, fmt) -%}
+<div class="df-decision">
+<p class="df-eyebrow">DECISIÓN DEL PIVOTE</p>
+<div class="df-pivot-info"><span>Entra <strong>{{ p.entering }}</strong></span><span>Sale <strong>{{ p.leaving }}</strong></span><span>Pivote <strong>{{ fmt(p.element) }}</strong></span></div>
+{%- if p.ratios %}<p class="df-ratio-title">Razón mínima: K ÷ coeficiente positivo de la columna {{ p.entering }}</p>
+<ul class="df-ratios">{% for r in p.ratios %}<li class="{{ 'is-chosen' if r.row==p.row else ('is-out' if r.ratio is none else '') }}">{% if r.ratio is not none %}<span class="df-mono">{{ r.row }}: {{ fmt(r.rhs) }} ÷ {{ fmt(r.coefficient) }} = {{ fmt(r.ratio) }}</span>{% else %}<span class="df-mono">{{ r.row }}: no participa ({{ fmt(r.coefficient) }})</span>{% endif %}{% if r.row==p.row %}<b>menor → sale {{ p.leaving }}</b>{% endif %}</li>{% endfor %}</ul>{% endif %}
+{%- if p.degenerate %}<p class="df-note">{% if p.ratios %}Pivote degenerado: la razón es 0. Cambia la base, pero no el punto.{% else %}La artificial básica vale 0: se retira con un coeficiente no nulo (puede ser negativo); no se aplica razón mínima.{% endif %}</p>{% endif %}
+</div>
+{%- endmacro -%}
+{%- macro bitacora(event, fmt) -%}
+<aside class="df-bitacora" aria-label="Bitácora de la tabla {{ event.number }}"><p class="df-hand">bitácora</p>
+<ul>{% for n in event.narrative %}<li class="df-nota df-nota-{{ n.kind }}"><span class="df-nota-ico">{{ icono(n.kind) }}</span><div><h5>{{ n.title }}</h5><p>{{ fmt(n.text) }}</p></div></li>{% endfor %}</ul></aside>
+{%- endmacro -%}
+{%- macro conclusion(R, fmt, id='') -%}
+{%- set c = R.conclusion -%}
+<section class="df-conclusion df-conc-{{ c.tone }}"{% if id %} id="{{ id }}" data-df-slide="conclusion"{% endif %} aria-label="Conclusión">
+<div class="df-conc-head"><span class="df-conc-seal" aria-hidden="true">{{ '✓' if c.tone=='optimal' else '✕' if c.tone=='infeasible' else '↗' if c.tone=='unbounded' else '‖' }}</span><div><p class="df-eyebrow">CONCLUSIÓN</p><h3 class="df-conc-title">{{ fmt(c.title) }}</h3></div></div>
+{%- if c.figures %}<div class="df-conc-figures">{% for f in c.figures %}<div class="df-conc-fig{{ ' is-main' if f.main else '' }}"><span>{% if f.symbol[0]=='x' %}x<sub>{{ f.symbol[1:] }}</sub>{% else %}{{ f.symbol }}{% endif %}{% if f.label != f.symbol %} · {{ f.label }}{% endif %}</span><strong>{{ fmt(f.value) }}</strong>{% if f.unit %}<small>{{ f.unit }}</small>{% endif %}</div>{% endfor %}</div>{% endif %}
+<p class="df-conc-lead">{{ fmt(c.lead) }}</p>
+{%- if c.points %}<ul class="df-conc-points">{% for text in c.points %}<li>{{ fmt(text) }}</li>{% endfor %}</ul>{% endif %}
+{%- for text in c.closing %}<p class="df-conc-closing">{{ fmt(text) }}</p>{% endfor %}
+{%- if R.model.context %}<p class="df-conc-context"><b>Planteamiento:</b> {{ R.model.context }}</p>{% endif %}
+</section>
+{%- endmacro -%}
+{%- macro informe(result, fmt, standalone=false, css='') -%}
+{%- if standalone -%}<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Informe · Método de las Dos Fases</title><style>{{ css|safe }}</style></head><body class="df-report-document"><main><div class="df-doc-head">{{ logo(40) }}<div><p class="df-eyebrow">INFORME · MÉTODO DE LAS DOS FASES</p><h1>Así se resolvió el modelo</h1><p class="df-caption">Procedimiento de referencia: Ing. Diana Linena Velásquez Romero · Archivo autónomo: Imprimir → Guardar como PDF.</p></div></div>{%- endif -%}
+{%- set R = result -%}{%- set st = R.status -%}{%- set maxi = R.model.sense == 'max' -%}
+<div class="df-report df-st-{{ st }}">
+<section class="df-panel" data-df-panel="resumen" id="df-panel-resumen" aria-label="Resumen">
+{% if standalone %}<h2 class="df-panel-title">Resumen</h2>{% endif %}
+<div class="df-row-top">
+<article class="df-sheet df-cartel">
+{%- if st=='optimal' %}<span class="df-chip df-chip-ok">Solución óptima</span><div class="df-cifra"><div><p class="df-eyebrow">{{ 'Z máximo' if maxi else 'Z mínimo' }}</p><strong>{{ fmt(R.objective_value) }}</strong></div><p>{{ R.model.objective_unit }}<br><span>({{ R.model.objective_name }})</span></p></div>
+<div class="df-chips">{% for v in R.solution %}<span class="df-chip df-chip-f2">x<sub>{{ loop.index }}</sub> = {{ fmt(v) }} · {{ R.model.variables[loop.index0].name }}</span>{% endfor %}{% for s in R.slacks %}{% if s.value != '0' %}<span class="df-chip">{{ s.name }} = {{ fmt(s.value) }} · {{ s.kind }}</span>{% endif %}{% endfor %}</div>
+<p class="df-muted">{{ R.message }} Cálculo con fracciones exactas.</p>
+{%- elif st=='infeasible' %}<span class="df-chip df-chip-inf">Modelo infactible</span><div class="df-cifra"><div><p class="df-eyebrow">r* mínimo</p><strong>{{ fmt(R.phase1_value) }}</strong></div><p>r no llegó a 0:<br>las artificiales no se pueden anular.</p></div><p class="df-muted">{{ R.message }}</p>
+{%- elif st=='unbounded' %}<span class="df-chip df-chip-noa">Objetivo no acotado</span><div class="df-cifra"><div><p class="df-eyebrow">Valor de Z</p><strong>{{ fmt(R.objective_value) }} {{ '+' if R.ray_gain[0]!='-' else '−' }} {{ fmt(R.ray_gain)|replace('−','') }}t</strong></div><p>{{ R.model.objective_unit }}, t ≥ 0</p></div><p class="df-muted">{{ R.message }}</p>
+{%- else %}<span class="df-chip">Cálculo detenido</span><p class="df-muted">{{ R.message }}</p>{% endif %}
+{%- if not standalone %}<button type="button" class="df-btn df-primary" data-df-action="guiado">Explicar paso a paso <span aria-hidden="true">→</span></button>{% endif %}
+</article>
+<article class="df-sheet df-historia"><p class="df-eyebrow">HISTORIA DEL CÁLCULO</p>
+{%- for s in R.story %}<div class="df-hist df-hist-{{ s.phase }}"><div class="df-hist-head"><h4>{{ s.label }}</h4><span>{{ s.text.split(':')[0] }}</span></div><div class="df-hist-values">{% for v in s['values'] %}<span class="df-mono">{{ s.symbol + ' = ' if loop.first else '' }}{{ fmt(v) }}</span>{% if not loop.last %}<b aria-hidden="true">→</b>{% endif %}{% endfor %}</div><p>{{ fmt(s.text) }}.</p></div>{% endfor %}
+{%- if st=='infeasible' %}<div class="df-hist df-hist-x"><div class="df-hist-head"><h4>Fase 2 · no se ejecuta</h4></div><p>Sin un punto factible no hay desde dónde optimizar Z.</p></div>{% endif %}
+<div class="df-trayecto"><p class="df-label">Puntos por los que pasó ({% for v in R.model.variables %}x<sub>{{ loop.index }}</sub>{{ ', ' if not loop.last else '' }}{% endfor %})</p><p class="df-mono">{% for t in R.trajectory %}({{ t.point|map('string')|join(', ') }}){{ ' → ' if not loop.last else '' }}{% endfor %}</p></div>
+</article>
+</div>
+
+
+{%- if st=='unbounded' %}
+<section class="df-sheet df-margin" id="df-certificado"><p class="df-eyebrow">CERTIFICADO DE NO ACOTACIÓN</p><h3>Un punto factible y una dirección que mejora sin tope</h3>
+<p class="df-equation df-equation-noa">x(t) = ({{ R.solution|join(', ') }}) + t·({{ R.ray|join(', ') }})<br>Z(t) = {{ fmt(R.objective_value) }} + ({{ fmt(R.ray_gain) }})·t,&nbsp; t ≥ 0</p>
+<p class="df-caption">Para cualquier t ≥ 0 el punto x(t) cumple todas las restricciones y Z sigue mejorando.</p></section>
+{%- elif st=='iteration_limit' %}
+<section class="df-sheet"><div class="df-alert df-alert-det"><span class="df-alert-ico" aria-hidden="true">‖</span><div><h3>Cálculo detenido</h3><p>{{ R.message }} El límite de iteraciones nunca se presenta como un óptimo.</p></div></div></section>
+{%- endif %}
+
+{%- if R.verification %}
+<section class="df-sheet df-slide" id="df-verificacion" data-df-slide="comprobar" data-headline="Se comprueba en el modelo original" data-phase="0"><p class="df-eyebrow">05 · COMPROBAR</p><h3>{{ 'Sustitución en el modelo original' if st=='optimal' else 'Sustitución del punto factible en el modelo original' }}</h3>
+<p class="df-equation">Z = {{ fmt(R.objective_substitution) }} = {{ fmt(R.objective_value) }}</p>
+<div class="df-chips">{% for name,value in R['values'].items() %}<span class="df-chip">{{ name }} = {{ fmt(value) }} · {{ "básica" if name in R.final_basis else "no básica" }}</span>{% endfor %}</div>
+<div class="df-table-scroll df-verif-table" tabindex="0" role="region" aria-label="Verificación de restricciones"><table class="df-table"><caption>Cumplimiento de las restricciones originales</caption><thead><tr><th>Restricción</th><th>Sustitución y comparación</th><th>Holgura / excedente</th><th>Resultado</th></tr></thead><tbody>
+{%- for ch in R.verification %}<tr><td><b>R{{ loop.index }}</b> · {{ ch.label }}</td><td class="df-mono">{{ fmt(ch.substitution) }} = {{ fmt(ch.lhs) }}{{ unit_of(ch.unit) }}<br>{{ fmt(ch.lhs) }} {{ {'<=':'≤','>=':'≥','=':'='}[ch.operator] }} {{ fmt(ch.rhs) }}</td><td>{{ fmt(ch.margin) }}{{ unit_of(ch.unit) }} · {{ 'igualdad' if ch.operator=='=' else 'holgura' if ch.operator=='<=' else 'excedente' }}<br>{{ 'Vinculante' if ch.binding else 'No vinculante' }}</td><td><span class="df-ok {{ '' if ch.satisfied else 'df-bad' }}">{{ 'Cumple' if ch.satisfied else 'No cumple' }}</span></td></tr>{% endfor -%}
+</tbody></table></div>
+<div class="df-verif-cards">{% for ch in R.verification %}<div class="df-verif-card"><div><h4>R{{ loop.index }} · {{ ch.label }}</h4><span class="df-ok {{ '' if ch.satisfied else 'df-bad' }}">{{ 'Cumple' if ch.satisfied else 'No cumple' }}</span></div><p class="df-mono">{{ fmt(ch.substitution) }} = {{ fmt(ch.lhs) }} · {{ fmt(ch.lhs) }} {{ {'<=':'≤','>=':'≥','=':'='}[ch.operator] }} {{ fmt(ch.rhs) }}</p><p class="df-caption">{{ fmt(ch.margin) }}{{ unit_of(ch.unit) }} · {{ 'igualdad' if ch.operator=='=' else 'holgura' if ch.operator=='<=' else 'excedente' }} · {{ 'vinculante' if ch.binding else 'no vinculante' }}</p></div>{% endfor %}</div>
+<p class="df-caption">No negatividad: {{ 'se cumple en todas las variables' if R.nonnegative else 'no se cumple' }}. Artificiales: todas valen 0 al terminar la Fase 1. Para ≤, holgura = K − uso; para ≥, excedente = uso − mínimo. Las cantidades fraccionarias pertenecen a un modelo continuo; no se redondean.</p></section>
+{%- endif %}
+{%- if not standalone %}{{ conclusion(R, fmt, 'df-conclusion') }}{% endif %}
+</section>
+
+<section class="df-panel" data-df-panel="desarrollo" id="df-panel-desarrollo" aria-label="Desarrollo completo">
+{% if standalone %}<h2 class="df-panel-title">Desarrollo completo</h2>{% endif %}
+<div class="df-sheet df-leyenda"><b>Cómo leer una tabla:</b><span class="df-chip">VB = variable básica</span><span class="df-chip">K = valor de la fila</span><span class="df-chip df-chip-z">Fila r / Z</span><span class="df-chip df-chip-pv">Columna que entra</span><span class="df-chip df-chip-pv">Pivote: encerrado a mano</span><span class="df-chip df-chip-f1">Fase 1 · terracota</span><span class="df-chip df-chip-f2">Fase 2 · verde</span></div>
+
+<section class="df-sheet df-margin df-slide" id="df-modelo" data-df-slide="estandarizar" data-headline="Del modelo a la forma estándar" data-phase="0"><p class="df-eyebrow">02 · ESTANDARIZAR</p><h3>Del modelo a la base inicial</h3>
+<p class="df-equation">{{ 'Max' if maxi else 'Min' }} Z = {% for c in R.model.objective %}{{ ' + ' if not loop.first else '' }}({{ fmt(c) }})·x{{ loop.index }}{% endfor %}<span class="df-caption">Convención del curso: Z − Σcⱼxⱼ = 0</span></p>
+<div class="df-table-scroll" tabindex="0" role="region" aria-label="Forma estándar"><table class="df-table"><caption>Restricciones originales y conversión a forma estándar</caption><thead><tr><th>Restricción original</th><th>Forma estándar y por qué</th><th>VB inicial</th></tr></thead><tbody>
+{%- for s in R.standardization %}{% set original=R.model.constraints[loop.index0] %}<tr><td><b>{{ s.restriction }}</b> · {{ original.label }}<br><span class="df-mono">{% for c in original.coefficients %}{{ ' + ' if not loop.first else '' }}({{ fmt(c) }})·x{{ loop.index }}{% endfor %} {{ {'<=':'≤','>=':'≥','=':'='}[original.operator] }} {{ fmt(original.rhs) }}</span></td><td><span class="df-mono">{{ fmt(s.equation) }}</span><br><span class="df-caption">{{ s.explanation }}</span></td><td><b class="df-mono">{{ s.basic }}</b></td></tr>{% endfor -%}
+</tbody></table></div>
+<p class="df-chips"><b>Base inicial:</b> <span class="df-chip">{{ R.initial_basis|join(', ') }}</span> <b>Función auxiliar:</b> <span class="df-chip df-chip-f1">Min r = {{ R.auxiliary }}</span></p>
+<p class="df-caption">Variables continuas: xⱼ ≥ 0. Solo se crean las columnas S y A necesarias; cada una conserva el número de su restricción.</p></section>
+
+{%- for event in R.events %}{% set next_event=R.events[loop.index] if not loop.last else none %}{% set prev_event=R.events[loop.index0-1] if not loop.first else none %}
+{%- if loop.first %}<div class="df-fase df-fase-1" id="df-fase-1"><span class="df-fase-num" aria-hidden="true">1</span><div><p class="df-eyebrow">FASE 1 · LLEGAR A LO FACTIBLE</p><h3>Minimizar r = {{ R.auxiliary }} hasta que valga 0</h3><p>Entra el mayor coeficiente positivo de r; se detiene cuando no quedan coeficientes positivos.</p></div></div>{% endif %}
+{%- if event.phase==2 and prev_event.phase==1 %}<div class="df-fase df-fase-2" id="df-fase-2"><span class="df-fase-num" aria-hidden="true">2</span><div><p class="df-eyebrow">FASE 2 · {{ 'SUBIR' if maxi else 'BAJAR' }} AL ÓPTIMO</p><h3>{{ 'Maximizar' if maxi else 'Minimizar' }} Z desde la base factible</h3><p>Se retiran r y las artificiales y se conserva la base {{ R.phase1_basis|join(', ') }}. Primero se escribe Z original con K = 0 y luego se vincula con esa base. {{ 'Entra el coeficiente más negativo de Z.' if maxi else 'Entra el coeficiente más positivo de Z.' }}</p></div></div>{% endif %}
+{%- set p = next_event.pivot if next_event and next_event.pivot else none %}
+{%- set hl = {'col': p.column_index, 'row': p.row_index} if p else ({'col': R.unbounded_column_index, 'row': -1} if (st=='unbounded' and loop.last) else none) %}
+<article class="df-sheet df-step df-slide" id="df-tabla-{{ event.number }}" data-df-slide="tabla" data-phase="{{ event.phase }}" data-number="{{ event.number }}" data-headline="{{ event.headline }}">
+<div class="df-step-main">
+<div class="df-step-heading"><span class="df-step-number">{{ '%02d'|format(event.number) }}</span><h4>{{ event.headline }}</h4><span class="df-chip {{ 'df-chip-f2' if event.phase==2 else 'df-chip-f1' }}">Fase {{ event.phase }}</span></div>
+<p class="df-step-sub">Tabla {{ event.number }} · {{ event.title.split(' · ',1)[-1] }}</p>
+{%- if event.operations %}<details class="df-operations"{% if standalone %} open{% endif %}><summary>Ver operaciones exactas · {{ event.operations|length }} fila{{ '' if event.operations|length==1 else 's' }}</summary><p class="df-caption">Primero se normaliza la fila pivote; las reducciones usan siempre la fila nueva.</p>{% for op in event.operations %}<div class="df-operation"><p class="df-op-label">{{ 'Normalización de la fila pivote' if op.kind=='normalize' else 'Reducción de ' ~ op.target }}</p><p class="df-equation">{{ fmt(op.formula) }}</p><div class="df-component-grid">{% for item in op.components %}<p><b>{{ item.column }}</b><span class="df-mono">{{ fmt(item.calculation) }}</span></p>{% endfor %}</div></div>{% endfor %}</details>{% endif %}
+{{ tableau(event, hl, fmt) }}
+<p class="df-caption">Base de esta tabla: {{ event.basis|join(', ') if event.basis else '—' }}. Las demás variables valen 0.</p>
+{%- if p %}{{ decision(p, fmt) }}{% endif %}
+</div>
+{{ bitacora(event, fmt) }}
+</article>{% endfor %}
+
+{%- if R.notes %}<section class="df-sheet"><h3>Observaciones del procedimiento</h3><ul class="df-bullets">{% for note in R.notes %}<li>{{ note }}</li>{% endfor %}</ul></section>{% endif %}
+<section class="df-sheet" id="df-resumen"><h3>Resumen de las tablas</h3><div class="df-table-scroll" tabindex="0" role="region" aria-label="Resumen de tablas"><table class="df-table"><caption>Secuencia completa</caption><thead><tr><th>Tabla</th><th>Paso</th><th>Base</th><th>K de r / Z</th></tr></thead><tbody>{% for e in R.events %}<tr><td><a href="#df-tabla-{{ e.number }}">{{ e.number }}</a></td><td>{{ e.headline }}<br><span class="df-caption">{{ e.title }}</span></td><td class="df-mono">{{ e.basis|join(', ') }}</td><td class="df-mono">{{ fmt(e.tableau[0][-1]) }}</td></tr>{% endfor %}</tbody></table></div></section>
+{{ conclusion(R, fmt, 'df-conclusion' if standalone else '') }}
+</section>
+<p class="df-caption df-report-foot">Cálculo con fracciones exactas · Convención Z − Σcⱼxⱼ = 0 · Procedimiento de referencia: Ing. Diana Linena Velásquez Romero.</p>
+</div>
+{%- if standalone %}</main></body></html>{% endif -%}
+{%- endmacro -%}
+{%- if examples is defined -%}
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Método de las Dos Fases · ruta al óptimo</title>
+<link rel="icon" href="data:,">
+<link rel="preload" href="{{ url_for('static', filename='fonts/dos_fases/atkinson-hyperlegible-latin-400-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="{{ url_for('static', filename='css/dos_fases.css') }}"></head>
+<body class="df-app"><a class="df-skip" href="#df-editor">Ir al planteamiento</a>
+<header class="df-topbar">
+  <a class="df-brand" href="{{ url_for('index') }}" aria-label="Dos Fases · volver al menú del proyecto">{{ logo(32) }}<span class="df-brand-name">Dos Fases</span><span class="df-hand df-brand-tag">ruta al óptimo</span></a>
+  <div><span class="df-university">Programación lineal · USTA</span><a class="df-link" href="{{ url_for('index') }}">← Menú del proyecto</a></div>
+</header>
+<main class="df-shell" data-api-url="{{ url_for('dos_fases_bp.calcular') }}" data-report-url="{{ url_for('dos_fases_bp.descargar_informe') }}">
+  <section class="df-hero">
+    <div class="df-hero-top"><div class="df-hero-text"><p class="df-eyebrow df-eyebrow-f1">PROGRAMACIÓN LINEAL · MÉTODO DE LAS DOS FASES</p><h1>Primero se llega a lo posible.<br>Después, a lo mejor.</h1></div><p class="df-hand df-hero-note" aria-hidden="true">así piensa el método ↓</p></div>
+    <ol class="df-route" id="df-route" aria-label="Ruta del método">
+      <li data-step="plantear" data-tone="n" data-state="current"><a href="#df-editor"><span class="df-route-dot">01</span><span class="df-eyebrow">Paso 01</span><strong>Plantear</strong><small>Escribe Z y las restricciones.</small></a></li>
+      <li data-step="estandarizar" data-tone="n" data-state="pending"><a href="#df-modelo"><span class="df-route-dot">02</span><span class="df-eyebrow">Paso 02</span><strong>Estandarizar</strong><small>Holguras, excedentes y artificiales.</small></a></li>
+      <li data-step="fase1" data-tone="f1" data-state="pending"><a href="#df-fase-1"><span class="df-route-dot">03</span><span class="df-eyebrow">Paso 03</span><strong>Fase 1 · Llegar</strong><small>Minimiza r hasta que valga 0.</small></a></li>
+      <li data-step="fase2" data-tone="f2" data-state="pending"><a href="#df-fase-2"><span class="df-route-dot">04</span><span class="df-eyebrow">Paso 04</span><strong>Fase 2 · Subir</strong><small>Mejora Z desde la base factible.</small></a></li>
+      <li data-step="comprobar" data-tone="n" data-state="pending"><a href="#df-verificacion"><span class="df-route-dot">05</span><span class="df-eyebrow">Paso 05</span><strong>Comprobar</strong><small>Sustituye en el modelo original.</small></a></li>
+    </ol>
+  </section>
+  <div class="df-plan">
+    <form class="df-sheet df-margin df-editor" id="df-editor" novalidate aria-label="Planteamiento del modelo">
+      <div class="df-editor-head"><p class="df-eyebrow">01 · PLANTEAR</p><h2>Tu modelo</h2></div>
+      <div class="df-options">
+        <div class="df-field"><label for="df-sense">Objetivo</label><select id="df-sense"><option value="max">Maximizar</option><option value="min">Minimizar</option></select></div>
+        <div class="df-field"><label for="df-count">Variables</label><select id="df-count">{% for i in range(1,9) %}<option value="{{ i }}" {{ 'selected' if i==2 else '' }}>{{ i }} variable{{ 's' if i>1 else '' }}</option>{% endfor %}</select></div>
+        <div class="df-field df-example-field"><label for="df-example">Cargar un ejemplo</label><div class="df-example-row"><select id="df-example"><option value="profesora">Ejemplo de la profesora · Max</option><option value="minimo">Costo de servicios · Min</option><option value="infactible">Caso infactible</option><option value="no_acotado">Caso no acotado</option></select><button type="button" id="df-load-example" class="df-btn df-btn-small">Cargar</button></div></div>
+      </div>
+      <fieldset class="df-objective-set"><legend>Función objetivo</legend><div class="df-eq" id="df-objective"></div></fieldset>
+      <div class="df-cons-head"><div><h3>Restricciones</h3><p class="df-help">Escríbelas como en el cuaderno. Admite 0.5, 0,5 y 1/3.</p></div><button type="button" id="df-add-constraint" class="df-text-btn">+ Agregar restricción</button></div>
+      <div id="df-constraints" class="df-cons-list"></div>
+      <details class="df-context-editor"><summary><span>Contexto y nombres:</span><span class="df-ctx-chips" id="df-context-summary"></span></summary>
+        <div class="df-context-body">
+          <div class="df-field"><label for="df-context">Enunciado <span>(opcional)</span></label><textarea id="df-context" rows="3" maxlength="4000" placeholder="Describe el problema que estás resolviendo…"></textarea></div>
+          <div id="df-variables" class="df-var-list"></div>
+          <div class="df-two"><div class="df-field"><label for="df-objective-name">¿Qué representa Z?</label><input type="text" id="df-objective-name" maxlength="160" placeholder="Ej.: Ganancia total"></div><div class="df-field"><label for="df-objective-unit">Unidad de Z</label><input type="text" id="df-objective-unit" maxlength="80" placeholder="Ej.: pesos / día"></div></div>
+          <p class="df-help">El texto aporta contexto a la lectura final; no se convierte en restricciones.</p>
+        </div></details>
+      <div class="df-actions">
+        <button type="submit" id="df-solve" class="df-btn df-primary">Resolver y explicar <span aria-hidden="true">→</span></button>
+        <button type="button" id="df-download-model" class="df-btn">Descargar modelo</button>
+        <label class="df-import df-text-btn">Importar JSON<input id="df-import" type="file" accept=".json,application/json"></label>
+      </div>
+      <p class="df-help">Modelo continuo: las variables pueden ser fraccionarias. Hasta 8 variables y 12 restricciones.</p>
+    </form>
+    <aside class="df-plan-side" aria-label="Vista previa del modelo">
+      <div class="df-sheet df-preview"><div class="df-preview-head"><p class="df-eyebrow">VISTA PREVIA</p><p class="df-hand">se actualiza mientras escribes</p></div><div id="df-preview" class="df-preview-body" aria-live="polite"></div></div>
+      <div class="df-sheet"><p class="df-eyebrow">ANTES DE RESOLVER</p><h3>Lo que hará el método</h3><ul id="df-plan-list" class="df-plan-list"></ul></div>
+    </aside>
+  </div>
+  <section class="df-results" id="df-results" aria-label="Resultados">
+    <div class="df-results-head"><div><p class="df-eyebrow" id="df-results-eyebrow">RESULTADO</p><h2>Así se resolvió tu modelo</h2></div>
+      <div id="df-export-actions" class="df-export" hidden><button class="df-btn df-btn-small" type="button" id="df-expand" aria-pressed="false">Abrir todas las operaciones</button><button class="df-btn df-btn-small" type="button" id="df-report-download">Descargar informe</button><button class="df-btn df-btn-small" type="button" id="df-print">Imprimir / PDF</button></div></div>
+    <div class="df-tabs" id="df-tabs" role="tablist" aria-label="Vistas del resultado" hidden>
+      <button type="button" role="tab" id="df-tab-resumen" aria-controls="df-panel-resumen" aria-selected="true" data-tab="resumen">Resumen</button>
+      <button type="button" role="tab" id="df-tab-guiado" aria-selected="false" data-tab="guiado">Recorrido guiado</button>
+      <button type="button" role="tab" id="df-tab-desarrollo" aria-controls="df-panel-desarrollo" aria-selected="false" data-tab="desarrollo">Desarrollo completo</button>
+    </div>
+    <div id="df-alerts">
+      <div id="df-error" class="df-alert df-alert-err" role="alert" hidden><span class="df-alert-ico" aria-hidden="true">!</span><div><h3>No se pudo procesar el modelo</h3><p id="df-error-text"></p></div></div>
+      <div id="df-stale" class="df-alert df-alert-old" hidden><span class="df-alert-ico" aria-hidden="true">↻</span><div><h3>Resultado anterior, sin recalcular</h3><p>Cambiaste el modelo: lo que ves corresponde al último cálculo. Vuelve a resolver para actualizarlo.</p></div></div>
+    </div>
+    <p id="df-status" class="df-live" role="status" aria-live="polite"></p>
+    <div id="df-result"><div class="df-placeholder"><p class="df-title-serif">Aquí aparecerá la explicación</p><p class="df-eyebrow">Resumen · Recorrido guiado · Desarrollo completo</p><button type="button" class="df-btn df-primary" id="df-run-example">Probar el ejemplo de clase <span aria-hidden="true">→</span></button></div></div>
+  </section>
+  <footer class="df-footer"><span>Dos Fases · módulo del proyecto de Programación Lineal</span><span>Procedimiento de referencia: Ing. Diana Linena Velásquez Romero</span></footer>
+</main>
+<div class="df-guided" id="df-guided" role="dialog" aria-modal="true" aria-labelledby="df-g-title" hidden>
+  <div class="df-g-bar"><div class="df-g-brand">{{ logo(26) }}<strong id="df-g-title">Recorrido guiado</strong><span class="df-chip" id="df-g-phase"></span></div>
+    <div class="df-g-progress"><div id="df-g-segments" class="df-g-segments" aria-hidden="true"></div><span id="df-g-count" class="df-g-count" aria-live="polite"></span></div>
+    <div class="df-g-actions"><button type="button" class="df-btn df-btn-small" id="df-g-full">⤢ Proyectar</button><button type="button" class="df-text-btn" id="df-g-close" aria-label="Salir del recorrido guiado">Salir ✕</button></div></div>
+  <div class="df-g-body" id="df-g-body" tabindex="-1"></div>
+  <div class="df-g-controls"><button type="button" class="df-btn" id="df-g-prev">← <span>Anterior</span></button><p class="df-help df-g-keys">Teclas ← → para avanzar · Esc para salir</p><button type="button" class="df-btn df-primary" id="df-g-next"><span>Siguiente</span> →</button></div>
+</div>
+<script type="application/json" id="df-examples">{{ examples|tojson }}</script>
+<script src="{{ url_for('static', filename='js/dos_fases.js') }}" defer></script>
+</body></html>
+{%- endif -%}

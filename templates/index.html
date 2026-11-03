@@ -118,16 +118,25 @@
         /* ── módulo card ── */
         .modules{
             display:grid;
-            grid-template-columns:repeat(2,1fr);
-            gap:16px;
-            width:100%;max-width:920px;
+            grid-template-columns:repeat(3,1fr);
+            gap:20px;
+            width:100%;max-width:1240px;
+            align-items:center;
             opacity:0;animation:fadeUp .65s .65s ease forwards;
+        }
+
+        .modules-col{
+            display:flex;
+            flex-direction:column;
+            gap:16px;
+            width:100%;
+            justify-content:center;
         }
 
         .mod-card{
             position:relative;
             display:flex;align-items:center;gap:18px;
-            padding:20px 24px;
+            padding:18px 22px;
             border-radius:16px;
             background:rgba(0,0,0,.02);
             border:1px solid rgba(0,0,0,.07);
@@ -136,13 +145,6 @@
             overflow:hidden;
             cursor:pointer;
             width:100%;
-        }
-
-        /* Si el número de módulos es impar, el botón del medio se ubica en la fila central */
-        .mod-card.mod-card-middle{
-            grid-column:1 / -1;
-            justify-self:center;
-            max-width:calc(50% - 8px);
         }
         /* borde gradiente al hover */
         .mod-card::before{
@@ -224,14 +226,11 @@
         }
 
         /* ── responsive ── */
-        @media(max-width:768px){
+        @media(max-width:960px){
             .modules{
                 grid-template-columns:1fr;
-                max-width:460px;
-            }
-            .mod-card.mod-card-middle{
-                grid-column:auto;
-                max-width:100%;
+                max-width:480px;
+                gap:16px;
             }
         }
         @media(max-width:500px){
@@ -270,62 +269,74 @@
         </div>
 
         <nav class="modules">
-            <a href="{{ url_for('grafico_bp.vista_principal') }}" class="mod-card">
-                <div class="mod-icon">📐</div>
-                <div class="mod-info">
-                    <h3>Método Gráfico</h3>
-                    <span>Región factible · Vértices · Solución óptima</span>
-                </div>
-                <span class="mod-arrow">→</span>
-            </a>
-            <a href="{{ url_for('vogel_bp.vista_principal') }}" class="mod-card">
-                <div class="mod-icon">📐</div>
-                <div class="mod-info">
-                    <h3>Método Vogel</h3>
-                    <span>Índice de penalización · Solución óptima</span>
-                </div>
-                <span class="mod-arrow">→</span>
-            </a>
-            <a href="{{ url_for('mod_bp.vista_principal') }}" class="mod-card">
-                <div class="mod-icon">📐</div>
-                <div class="mod-info">
-                    <h3>Método MOD</h3>
-                    <span>Mejora iterativa · Costos reducidos</span>
-                </div>
-                <span class="mod-arrow">→</span>
-            </a>
-            <a href="{{ url_for('regresion_bp.vista_principal') }}" class="mod-card">
-                <div class="mod-icon">📐</div>
-                <div class="mod-info">
-                    <h3>Regresión lineal con Simplex</h3>
-                    <span>Ajuste lineal · Parámetros óptimos</span>
-                </div>
-                <span class="mod-arrow">→</span>
-            </a>
-            <a href="{{ url_for('gran_m_bp.vista_principal') }}" class="mod-card">
-                <div class="mod-icon">📐</div>
-                <div class="mod-info">
-                    <h3>Método Gran M</h3>
-                    <span>Tabla Gran M · Iteraciones · Solución óptima</span>
-                </div>
-                <span class="mod-arrow">→</span>
-            </a>
-            <a href="{{ url_for('simplex_bp.vista_principal') }}" class="mod-card">
-                <div class="mod-icon">📐</div>
-                <div class="mod-info">
-                    <h3>Método Simplex</h3>
-                    <span>Tabla Simplex · Iteraciones · Solución óptima</span>
-                </div>
-                <span class="mod-arrow">→</span>
-            </a>
-            <!-- Si se agregan más módulos en el futuro, duplicar el bloque mod-card -->
-        </nav>
+            <!-- Columna 1: 2 módulos -->
+            <div class="modules-col">
+                <a href="{{ url_for('grafico_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Método Gráfico</h3>
+                        <span>Región factible · Vértices · Solución óptima</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+                <a href="{{ url_for('vogel_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Método Vogel</h3>
+                        <span>Índice de penalización · Solución óptima</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+            </div>
 
-        <div class="stats">
-            <div class="stat"><div class="num">2</div><div class="label">Variables</div></div>
-            <div class="stat"><div class="num">∞</div><div class="label">Restricciones</div></div>
-            <div class="stat"><div class="num">0s</div><div class="label">Cálculo</div></div>
-        </div>
+            <!-- Columna 2: 3 módulos (columna de la mitad) -->
+            <div class="modules-col">
+                <a href="{{ url_for('mod_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Método MOD</h3>
+                        <span>Mejora iterativa · Costos reducidos</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+                <a href="{{ url_for('regresion_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Regresión lineal con Simplex</h3>
+                        <span>Ajuste lineal · Parámetros óptimos</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+                <a href="{{ url_for('gran_m_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Método Gran M</h3>
+                        <span>Tabla Gran M · Iteraciones · Solución óptima</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+            </div>
+
+            <!-- Columna 3: 2 módulos -->
+            <div class="modules-col">
+                <a href="{{ url_for('simplex_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Método Simplex</h3>
+                        <span>Tabla Simplex · Iteraciones · Solución óptima</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+                <a href="{{ url_for('dos_fases_bp.vista_principal') }}" class="mod-card">
+                    <div class="mod-icon">📐</div>
+                    <div class="mod-info">
+                        <h3>Método de las Dos Fases</h3>
+                        <span>Fase 1 · Fase 2 · Restricciones ≥ y =</span>
+                    </div>
+                    <span class="mod-arrow">→</span>
+                </a>
+            </div>
+        </nav>
     </section>
 
     <!-- foot -->
@@ -341,23 +352,6 @@
 <span class="easter-egg" title="↑↑↓↓←→←→BA">⌘</span>
 
 <script>
-/* ─── Balancear módulos en 3 filas (si es impar, el botón extra va en la fila de la mitad) ─── */
-(function(){
-    function balanceModules(){
-        const container = document.querySelector('.modules');
-        if(!container) return;
-        const cards = Array.from(container.querySelectorAll('.mod-card'));
-        const total = cards.length;
-        cards.forEach(c => c.classList.remove('mod-card-middle'));
-        if(total % 2 !== 0 && total >= 3){
-            const midIndex = Math.floor(total / 2);
-            cards[midIndex].classList.add('mod-card-middle');
-        }
-    }
-    balanceModules();
-    window.addEventListener('resize', balanceModules);
-})();
-
 /* ─── Minimal particle field ─── */
 (function(){
     const c=document.getElementById('particles'),ctx=c.getContext('2d');
