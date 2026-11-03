@@ -80,6 +80,8 @@ body {
     font-family: var(--fuente-texto);
     font-size: var(--texto-cuerpo);
     line-height: 1.55;
+    /* Inter convierte "2x1" en "2×1" con su alternativa contextual: aquí x es una variable */
+    font-variant-ligatures: no-contextual;
 }
 
 h1, h2, h3, h4 {
@@ -296,5 +298,331 @@ a {
         animation: none !important;
         transition: none !important;
         scroll-behavior: auto !important;
+    }
+}
+
+/* ── Formulario ─────────────────────────────────────── */
+.enunciado h2 {
+    display: flex;
+    align-items: center;
+    min-height: var(--tactil);
+}
+
+.contexto,
+.termino input,
+.restriccion-campos input,
+.modelo select {
+    border: 1px solid var(--linea-fuerte);
+    border-radius: var(--radio-s);
+    background: var(--papel);
+    color: var(--tinta);
+    font: inherit;
+}
+
+.contexto {
+    display: block;
+    width: 100%;
+    margin-block: var(--esp-3);
+    padding: var(--esp-3);
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.modelo-cabeza {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-2);
+}
+
+.btn-sutil {
+    border-color: transparent;
+    background: transparent;
+    color: var(--tinta);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.btn-sutil:hover:not(:disabled) {
+    background: var(--niebla);
+}
+
+.confirmacion {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2);
+}
+
+.grupo {
+    min-width: 0;
+    margin: var(--esp-4) 0 0;
+    padding: 0;
+    border: 0;
+}
+
+.grupo legend {
+    padding: 0;
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+    font-weight: 600;
+}
+
+.fila-objetivo,
+.restriccion-campos {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2);
+}
+
+.fila-objetivo {
+    margin-top: var(--esp-2);
+}
+
+.modelo select {
+    min-height: var(--tactil);
+    padding-inline: var(--esp-2);
+}
+
+.termino {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-1);
+}
+
+.termino input,
+.restriccion-campos > input {
+    width: 4.5rem;
+    min-height: var(--tactil);
+    padding-inline: var(--esp-2);
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.termino-mas {
+    margin-left: var(--esp-1);
+    color: var(--pizarra-honda);
+}
+
+.termino-igual {
+    font-weight: 500;
+}
+
+[aria-invalid="true"] {
+    border-color: var(--no-factible);
+    box-shadow: 0 0 0 1px var(--no-factible);
+}
+
+.restriccion {
+    display: grid;
+    grid-template-columns: 2rem minmax(0, max-content) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--esp-1) var(--esp-2);
+    padding-block: var(--esp-2);
+    border-bottom: 1px solid var(--linea);
+}
+
+.restriccion-nombre {
+    color: var(--pizarra);
+    font-size: var(--texto-nota);
+    font-weight: 500;
+}
+
+/* Marca discreta: la misma A₁ que después se tacha en la columna Base */
+.lleva {
+    color: var(--vino-m);
+    font-size: var(--texto-nota);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.btn-eliminar {
+    min-width: var(--tactil);
+    min-height: var(--tactil);
+    padding-inline: var(--esp-2);
+    border: 0;
+    border-radius: var(--radio-s);
+    background: transparent;
+    color: var(--pizarra-honda);
+    font: inherit;
+    font-size: 0.9375rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+}
+
+.btn-eliminar:hover:not(:disabled) {
+    background: var(--niebla);
+    color: var(--no-factible);
+}
+
+.btn-eliminar:disabled {
+    color: var(--pizarra);
+    text-decoration: none;
+    cursor: not-allowed;
+}
+
+/* Agregar y quitar muestran qué fila cambió */
+.restriccion.entrando {
+    overflow: hidden;
+    animation: fila-entra 0.22s ease-out;
+}
+
+.restriccion.saliendo {
+    overflow: hidden;
+    pointer-events: none;
+    animation: fila-sale 0.18s ease-in forwards;
+}
+
+@keyframes fila-entra {
+    from { max-height: 0; padding-block: 0; opacity: 0; background: var(--celda-cambiada); }
+    to { max-height: 12rem; opacity: 1; background: transparent; }
+}
+
+@keyframes fila-sale {
+    from { max-height: 12rem; opacity: 1; }
+    to { max-height: 0; padding-block: 0; border-bottom-width: 0; opacity: 0; }
+}
+
+.error-campo {
+    grid-column: 1 / -1;
+    margin-top: var(--esp-1);
+    color: var(--no-factible);
+    font-size: 0.875rem;
+    font-weight: 500;
+    white-space: pre-line;
+}
+
+#form-enunciado .error-campo {
+    margin-block: calc(-1 * var(--esp-1)) var(--esp-3);
+}
+
+.grupo > .btn-sutil {
+    margin-top: var(--esp-2);
+    padding-inline: 0;
+}
+
+.vista-previa {
+    margin-top: var(--esp-4);
+    padding-top: var(--esp-3);
+    border-top: 1px solid var(--linea);
+}
+
+.vista-previa h3 {
+    color: var(--pizarra-honda);
+    font-family: var(--fuente-texto);
+    font-size: 0.9375rem;
+    letter-spacing: 0;
+}
+
+.linea-modelo {
+    margin-top: var(--esp-1);
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+.estado-envio {
+    margin-top: var(--esp-3);
+    color: var(--no-factible);
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.estado-envio:empty {
+    margin: 0;
+}
+
+.btn-calcular {
+    min-width: 14rem;
+    margin-top: var(--esp-3);
+}
+
+/* Estado de carga: el botón deja de responder y lo dice */
+.btn.cargando::before {
+    content: '';
+    width: 1em;
+    height: 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: gira 0.7s linear infinite;
+}
+
+@keyframes gira {
+    to { transform: rotate(360deg); }
+}
+
+.aviso {
+    margin-top: var(--esp-3);
+    padding: var(--esp-3);
+    border: 1px solid var(--dorado);
+    border-radius: var(--radio-s);
+    color: var(--dorado-texto);
+    font-size: 0.9375rem;
+}
+
+.aviso ul {
+    margin: var(--esp-2) 0 0;
+    padding-left: var(--esp-4);
+}
+
+.aviso-error {
+    border-color: var(--no-factible);
+    background: var(--no-factible-fondo);
+    color: var(--no-factible);
+}
+
+.panel-modelo > summary {
+    font-family: var(--fuente-texto);
+}
+
+.resumen-accion {
+    margin-left: auto;
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.panel-modelo[open] .resumen-accion {
+    visibility: hidden;
+}
+
+@media (max-width: 640px) {
+    .restriccion {
+        grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "nombre eliminar"
+            "campos campos"
+            "error error";
+    }
+
+    .restriccion-nombre {
+        grid-area: nombre;
+        display: flex;
+        align-items: center;
+        gap: var(--esp-2);
+    }
+
+    .restriccion-campos { grid-area: campos; }
+    .btn-eliminar { grid-area: eliminar; }
+    .error-campo { grid-area: error; }
+
+    .lleva {
+        grid-area: nombre;
+        justify-self: start;
+        margin-left: 2.25rem;
+        white-space: normal;
+    }
+
+    .termino input,
+    .restriccion-campos > input {
+        width: 3.5rem;
+    }
+
+    .btn-calcular {
+        width: 100%;
     }
 }

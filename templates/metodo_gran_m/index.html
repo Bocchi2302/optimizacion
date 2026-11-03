@@ -12,17 +12,25 @@
 </head>
 <body>
     {% macro fila_restriccion(variables, valores, op, c) -%}
-    <div class="restriccion-row">
-        {% for v in variables %}
-        <input type="text" inputmode="decimal" name="a[]" value="{{ valores[loop.index0] if valores else '' }}" required> {{ v|nombre_visible }}{% if not loop.last %} +{% endif %}
-        {% endfor %}
-        <select name="op[]">
-            <option value="<=" {% if op == '<=' %}selected{% endif %}>≤</option>
-            <option value=">=" {% if op == '>=' %}selected{% endif %}>≥</option>
-            <option value="=" {% if op == '=' %}selected{% endif %}>=</option>
-        </select>
-        <input type="text" inputmode="decimal" name="b[]" value="{{ c or '' }}" required>
-        <button type="button" class="btn-eliminar" onclick="this.parentElement.remove()">Eliminar</button>
+    <div class="restriccion" data-restriccion>
+        <span class="restriccion-nombre" data-nombre></span>
+        <div class="restriccion-campos">
+            {% for v in variables %}
+            <span class="termino">
+                <input type="text" autocomplete="off" name="a[]" value="{{ valores[loop.index0] if valores else '' }}" data-var="{{ v }}" data-visible="{{ v|nombre_visible }}" aria-label="Coeficiente de {{ v|nombre_visible }}" required>
+                <span class="termino-variable">{{ v|nombre_visible }}</span>{% if not loop.last %}<span class="termino-mas" aria-hidden="true">+</span>{% endif %}
+            </span>
+            {% endfor %}
+            <select name="op[]" aria-label="Tipo de restricción">
+                <option value="<=" {% if op == '<=' %}selected{% endif %}>≤</option>
+                <option value=">=" {% if op == '>=' %}selected{% endif %}>≥</option>
+                <option value="=" {% if op == '=' %}selected{% endif %}>=</option>
+            </select>
+            <input type="text" autocomplete="off" name="b[]" value="{{ c or '' }}" data-lado-derecho aria-label="Lado derecho" required>
+        </div>
+        <span class="lleva" data-lleva hidden></span>
+        <button type="button" class="btn-eliminar" data-eliminar>Eliminar</button>
+        <p class="error-campo" data-error role="alert" hidden></p>
     </div>
     {%- endmacro %}
 
@@ -63,21 +71,21 @@
         {% endif %}
         <div class="mesa">
         <!-- Enunciado: de aquí se sacan las variables y el modelo -->
-        <section class="enunciado" id="contexto">
-            <h2>Enunciado</h2>
-            <p class="nota">
-                Escribe el ejercicio. Las líneas con la función objetivo y las restricciones (por ejemplo
-                <em>Maximizar Z = 3x + 5y</em> o <em>2x + y ≤ 18</em>) se convierten en el modelo. El texto
-                libre se ignora. Después puedes corregir el modelo abajo.
+        <section class="enunciado" id="contexto" aria-labelledby="titulo-enunciado">
+            <h2 id="titulo-enunciado">Enunciado</h2>
+            <p class="nota" id="ayuda-enunciado">
+                Las líneas con fórmula, como <em>Maximizar Z = 3x + 5y</em> o <em>2x + y ≤ 18</em>, forman el modelo.
+                El resto del texto se ignora.
             </p>
-            <form method="POST">
-                <textarea name="contexto" rows="7" class="contexto">{{ datos.contexto }}</textarea>
+            <form method="POST" id="form-enunciado" novalidate>
+                <textarea id="campo-contexto" name="contexto" rows="8" class="contexto" aria-labelledby="titulo-enunciado" aria-describedby="ayuda-enunciado error-contexto">{{ datos.contexto }}</textarea>
+                <p class="error-campo" id="error-contexto" role="alert" hidden></p>
                 <button type="submit" name="accion" value="extraer" class="btn btn-secundario">Extraer modelo</button>
             </form>
 
             {% if avisos %}
-            <div class="avisos">
-                <strong>Revisa estas líneas, no se pudieron interpretar:</strong>
+            <div class="aviso">
+                <strong>Revisa estas líneas: no se pudieron interpretar.</strong>
                 <ul>
                     {% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}
                 </ul>
@@ -86,41 +94,62 @@
         </section>
 
         <!-- Modelo editable y cálculo -->
-        <section class="modelo" id="formulario">
-            <h2>Modelo</h2>
+        <section class="modelo" id="formulario" aria-labelledby="titulo-modelo">
+            <div class="modelo-cabeza">
+                <h2 id="titulo-modelo">Modelo</h2>
+                <form method="GET" action="{{ url_for('gran_m_bp.vista_principal') }}" id="form-ejemplo">
+                    <button type="submit" class="btn btn-sutil" id="btn-ejemplo">Cargar ejemplo</button>
+                    <div class="confirmacion" id="confirmar-ejemplo" hidden>
+                        <p>El ejemplo reemplaza lo que escribiste.</p>
+                        <button type="submit" class="btn btn-secundario" id="btn-ejemplo-confirmar">Cargar ejemplo</button>
+                        <button type="button" class="btn btn-sutil" id="btn-ejemplo-cancelar">Conservar lo escrito</button>
+                    </div>
+                </form>
+            </div>
 
-            {% if error %}
-                <div class="error">{{ error }}</div>
+            {% if error and not pasos %}
+                <p class="aviso aviso-error" role="alert">{{ error }}</p>
             {% endif %}
 
             {% if datos.variables %}
-            <form method="POST">
-                <input type="hidden" name="contexto" value="{{ datos.contexto }}">
+            <form method="POST" id="form-modelo" novalidate>
+                <input type="hidden" name="contexto" id="contexto-oculto" value="{{ datos.contexto }}">
                 {% for v in datos.variables %}<input type="hidden" name="nombres[]" value="{{ v }}">{% endfor %}
 
-                <h3>Función Objetivo (Z)</h3>
-                <div class="fila-campos">
-                    <select name="tipo_opt">
-                        <option value="max" {% if datos.tipo_opt == 'max' %}selected{% endif %}>Maximizar</option>
-                        <option value="min" {% if datos.tipo_opt == 'min' %}selected{% endif %}>Minimizar</option>
-                    </select>
-                    <span>Z =</span>
-                    {% for v in datos.variables %}
-                        <input type="text" inputmode="decimal" name="z[]" value="{{ datos.z[loop.index0] }}" required> {{ v|nombre_visible }}{% if not loop.last %} +{% endif %}
-                    {% endfor %}
+                <fieldset class="grupo" data-grupo-objetivo>
+                    <legend>Función objetivo</legend>
+                    <div class="fila-objetivo">
+                        <select name="tipo_opt" id="tipo-opt" aria-label="Tipo de optimización">
+                            <option value="max" {% if datos.tipo_opt == 'max' %}selected{% endif %}>Maximizar</option>
+                            <option value="min" {% if datos.tipo_opt == 'min' %}selected{% endif %}>Minimizar</option>
+                        </select>
+                        <span class="termino-igual">Z =</span>
+                        {% for v in datos.variables %}
+                        <span class="termino">
+                            <input type="text" autocomplete="off" name="z[]" value="{{ datos.z[loop.index0] }}" data-var="{{ v }}" data-visible="{{ v|nombre_visible }}" aria-label="Coeficiente de {{ v|nombre_visible }} en Z" required>
+                            <span class="termino-variable">{{ v|nombre_visible }}</span>{% if not loop.last %}<span class="termino-mas" aria-hidden="true">+</span>{% endif %}
+                        </span>
+                        {% endfor %}
+                    </div>
+                    <p class="error-campo" data-error role="alert" hidden></p>
+                </fieldset>
+
+                <fieldset class="grupo">
+                    <legend>Restricciones</legend>
+                    <div id="restricciones-container">
+                        {% for r in datos.restricciones %}
+                            {{ fila_restriccion(datos.variables, r.a, r.op, r.c) }}
+                        {% endfor %}
+                    </div>
+                    <button type="button" class="btn btn-sutil" id="btn-agregar-restriccion">Agregar restricción</button>
+                </fieldset>
+
+                <div class="vista-previa">
+                    <h3>Así queda el modelo</h3>
+                    <div id="vista-previa"></div>
                 </div>
 
-                <h3>Restricciones</h3>
-                <div id="restricciones-container">
-                    {% for r in datos.restricciones %}
-                        {{ fila_restriccion(datos.variables, r.a, r.op, r.c) }}
-                    {% endfor %}
-                </div>
-
-                <button type="button" class="btn btn-agregar" id="btn-agregar-restriccion">+ Agregar Restricción</button>
-
-                <p class="nota">Nota: las variables son no negativas por defecto.</p>
-
+                <p class="estado-envio" id="estado-envio" role="status"></p>
                 <button type="submit" name="accion" value="calcular" class="btn btn-calcular">Calcular paso a paso</button>
             </form>
 
@@ -129,10 +158,9 @@
                 {{ fila_restriccion(datos.variables, none, '<=', '') }}
             </template>
             {% else %}
-                <p class="nota">Todavía no hay modelo. Escribe el contexto arriba y pulsa <em>Extraer modelo</em>.</p>
+                <p class="nota">Todavía no hay modelo. Escribe el enunciado y pulsa <strong>Extraer modelo</strong>.</p>
             {% endif %}
         </section>
-
         </div>
         {% if pasos %}
         </details>
