@@ -66,7 +66,7 @@
         <details class="plegable panel-modelo" id="panel-modelo">
             <summary>
                 <span id="resumen-modelo">Modelo con {{ datos.variables|length }} variables y {{ datos.restricciones|length }} restricciones</span>
-                <span class="resumen-accion">Editar modelo</span>
+                <span class="resumen-accion"><span class="si-cerrado">Editar modelo</span><span class="si-abierto">Ocultar modelo</span></span>
             </summary>
         {% endif %}
         <div class="mesa">
@@ -185,6 +185,7 @@
             <div class="paso" id="paso">
                 <h3 id="titulo-paso" tabindex="-1"></h3>
                 <p class="hechos" id="hechos-paso" hidden></p>
+                <div class="resumen-resultado" id="resumen-resultado" hidden></div>
                 <div id="explicacion" class="explicacion"></div>
                 <div id="formulas" class="formulas"></div>
                 <div class="control-tablas" id="control-tablas" hidden>
@@ -203,6 +204,7 @@
                     <li data-leyenda="cambio"><span class="muestra muestra-cambio"></span>Celda que cambió</li>
                     <li data-leyenda="m"><span class="termino-m">M</span>Término con penalización</li>
                 </ul>
+                <button type="button" class="btn btn-secundario btn-editar" id="btn-editar-modelo" hidden>Editar modelo</button>
             </div>
 
             <div class="controles">

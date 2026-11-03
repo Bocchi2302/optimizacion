@@ -469,6 +469,26 @@
         return faseAnterior === null ? FASE_POR_DEFECTO : faseAnterior;
     }
 
+    // Estado de un paso final según su título; null en los pasos normales
+    function estadoDe(titulo) {
+        if (/no hay soluci[oó]n factible/i.test(titulo)) {
+            return 'no-factible';
+        }
+        if (/no acotado/i.test(titulo)) {
+            return 'no-acotado';
+        }
+        return /soluci[oó]n [oó]ptima/i.test(titulo) ? 'optimo' : null;
+    }
+
+    function tituloVisible(titulo) {
+        const sinPrefijo = titulo.replace(/^Diagn[oó]stico:\s*/i, '');
+        return sinPrefijo.charAt(0).toUpperCase() + sinPrefijo.slice(1);
+    }
+
+    function esVariableDeDecision(nombre) {
+        return nombre !== 'Z' && nombre !== 'Solución' && !/^[SA][₀-₉]/.test(nombre);
+    }
+
     function esArtificial(nombre) {
         return /^A[₀-₉]/.test(nombre);
     }
@@ -508,6 +528,9 @@
             anuncio: document.getElementById('anuncio'),
             titulo: document.getElementById('titulo-paso'),
             hechos: document.getElementById('hechos-paso'),
+            paso: document.getElementById('paso'),
+            resumenResultado: document.getElementById('resumen-resultado'),
+            editarModelo: document.getElementById('btn-editar-modelo'),
             indicador: document.getElementById('indicador'),
             faseActual: document.getElementById('fase-actual'),
             explicacion: document.getElementById('explicacion'),
@@ -677,6 +700,29 @@
             });
 
             contador.append(etiqueta, cifras, nombres);
+
+            const nota = notaDelContador(actual);
+            contador.classList.toggle('contador-detenido', Boolean(nota) && nota.detenido);
+            if (nota) {
+                const texto = document.createElement('span');
+                texto.className = 'contador-nota';
+                texto.textContent = nota.texto;
+                contador.appendChild(texto);
+            }
+        }
+
+        function notaDelContador(actual) {
+            const quedan = actual.artificialesEnBase;
+            if (actual.indice !== pasos.length - 1 || quedan.length === 0) {
+                return null;
+            }
+            // Con una sola artificial, el nombre ya está al lado de la nota
+            const lista = artificiales.length === 1 ? '' : `${quedan.join(' y ')} `;
+            const plural = quedan.length > 1;
+            if (estadoDe(pasos[actual.indice].titulo) === 'no-factible') {
+                return { texto: `${lista}no ${plural ? 'salieron' : 'salió'} de la base`, detenido: true };
+            }
+            return { texto: `${lista}${plural ? 'siguen' : 'sigue'} en la base con valor 0: no altera la solución`, detenido: false };
         }
 
         function datosDeIteracion(titulo) {
@@ -874,6 +920,10 @@
                 if (pivote && i === pivote.fila) {
                     celdaBase.appendChild(marcaEje('sale'));
                 }
+                if (opciones.atascadas && esArtificial(fila.base) && fila.celdas[fila.celdas.length - 1] !== '0') {
+                    tr.classList.add('fila-atascada');
+                    celdaBase.appendChild(marcaEje('no salió'));
+                }
                 if (previa && previa.filas[i].base !== fila.base) {
                     const anterior = previa.filas[i].base;
                     celdaBase.classList.add('cambiada');
@@ -1004,6 +1054,7 @@
                     etiqueta: comparar ? 'Antes del pivoteo' : null,
                     rol: comparar ? 'antes' : null,
                     pivote: paso.pivote,
+                    atascadas: estadoDe(paso.titulo) === 'no-factible',
                     anchos: anchos
                 }));
             }
@@ -1024,21 +1075,95 @@
             aplicarVista();
         }
 
+        function valorDe(tabla, nombre) {
+            const fila = tabla.filas.find(function (f) { return f.base === nombre; });
+            return fila ? fila.celdas[fila.celdas.length - 1] : '0';
+        }
+
+        function parValor(nombre, valor) {
+            const par = document.createElement('div');
+            const termino = document.createElement('dt');
+            const definicion = document.createElement('dd');
+            termino.textContent = nombre;
+            pintarValor(definicion, valor);
+            par.append(termino, definicion);
+            return par;
+        }
+
+        function mostrarResumenResultado(paso) {
+            const tabla = paso.tabla;
+            const zona = elementos.resumenResultado;
+            const columnas = tabla.columnas.slice(1, -1);
+            const enBase = derivados[indiceActual].artificialesEnBase;
+
+            const estado = document.createElement('p');
+            estado.className = 'resultado-estado';
+            if (artificiales.length === 0) {
+                estado.textContent = 'Estado: óptimo.';
+            } else {
+                estado.textContent = enBase.length === 0
+                    ? 'Estado: óptimo. Todas las artificiales valen 0.'
+                    : 'Estado: óptimo. Las artificiales que quedan valen 0.';
+            }
+
+            const principal = document.createElement('p');
+            principal.className = 'resultado-z';
+            const etiqueta = document.createElement('span');
+            etiqueta.className = 'resultado-z-etiqueta';
+            etiqueta.textContent = `Z ${elementos.visor.dataset.tipo === 'max' ? 'máximo' : 'mínimo'} =`;
+            principal.appendChild(etiqueta);
+            pintarValor(principal, tabla.filas[0].celdas[tabla.filas[0].celdas.length - 1]);
+
+            const variables = document.createElement('dl');
+            variables.className = 'resultado-variables';
+            columnas.filter(esVariableDeDecision).forEach(function (nombre) {
+                variables.appendChild(parValor(nombre, valorDe(tabla, nombre)));
+            });
+
+            const secundarias = document.createElement('dl');
+            secundarias.className = 'resultado-holguras';
+            columnas.filter(function (nombre) {
+                return !esVariableDeDecision(nombre) && !esArtificial(nombre);
+            }).forEach(function (nombre) {
+                secundarias.appendChild(parValor(nombre, valorDe(tabla, nombre)));
+            });
+
+            zona.replaceChildren(estado, principal, variables);
+            if (secundarias.childElementCount > 0) {
+                const titulo = document.createElement('p');
+                titulo.className = 'nota';
+                titulo.textContent = 'Holguras y excesos';
+                zona.append(titulo, secundarias);
+            }
+        }
+
         function mostrarPaso(opciones) {
             const paso = pasos[indiceActual];
             const titulo = limpiarTitulo(paso.titulo);
             const iteracion = datosDeIteracion(titulo);
+            const estado = estadoDe(titulo);
 
             elementos.indicador.textContent = `Paso ${indiceActual + 1} de ${pasos.length}`;
-            elementos.titulo.textContent = iteracion ? iteracion.titulo : titulo;
+            elementos.titulo.textContent = iteracion ? iteracion.titulo : tituloVisible(titulo);
+            if (estado) {
+                elementos.paso.dataset.estado = estado;
+            } else {
+                delete elementos.paso.dataset.estado;
+            }
+            elementos.resumenResultado.hidden = estado !== 'optimo';
+            if (estado === 'optimo') {
+                mostrarResumenResultado(paso);
+            }
+            elementos.editarModelo.hidden = estado === null || estado === 'optimo';
             mostrarHechos(iteracion);
             actualizarFases();
             actualizarContador(opciones.animar);
 
             elementos.explicacion.innerHTML = resaltarTerminosM(acortarDecimales(paso.explicacion));
 
+            // En el paso óptimo el resumen ya da esos valores
             elementos.formulas.replaceChildren();
-            paso.formulas.forEach(function (texto) {
+            (estado === 'optimo' ? [] : paso.formulas).forEach(function (texto) {
                 const div = document.createElement('div');
                 div.className = 'formula';
                 div.textContent = acortarDecimales(texto);
@@ -1086,6 +1211,13 @@
                 irA(pasos.length - 1);
             });
         }
+
+        elementos.editarModelo.addEventListener('click', function () {
+            const panel = document.getElementById('panel-modelo');
+            panel.open = true;
+            panel.scrollIntoView({ block: 'start', behavior: movimiento.matches ? 'auto' : 'smooth' });
+            document.querySelector('#form-modelo input[type="text"]').focus({ preventScroll: true });
+        });
 
         elementos.botonesVista.forEach(function (boton) {
             boton.addEventListener('click', function () {

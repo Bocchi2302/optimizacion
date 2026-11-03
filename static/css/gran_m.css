@@ -586,8 +586,13 @@ a {
     text-underline-offset: 3px;
 }
 
-.panel-modelo[open] .resumen-accion {
-    visibility: hidden;
+.panel-modelo .si-abierto,
+.panel-modelo[open] .si-cerrado {
+    display: none;
+}
+
+.panel-modelo[open] .si-abierto {
+    display: inline;
 }
 
 @media (max-width: 640px) {
@@ -1171,5 +1176,171 @@ html {
     .tabla-simplex th,
     .tabla-simplex td {
         padding-inline: var(--esp-2);
+    }
+}
+
+/* ── Estados finales ────────────────────────────────── */
+.paso[data-estado] h3::before {
+    margin-right: var(--esp-2);
+}
+
+.paso[data-estado="optimo"] h3 { color: var(--optimo); }
+.paso[data-estado="optimo"] h3::before { content: '✓'; }
+
+/* Resultado: abre con una regla y cierra con doble regla, como un total */
+.resumen-resultado {
+    margin-top: var(--esp-3);
+    padding-block: var(--esp-3) var(--esp-4);
+    border-top: 1px solid var(--tinta);
+    border-bottom: 4px double var(--tinta);
+}
+
+.resultado-estado {
+    color: var(--optimo);
+    font-size: 0.9375rem;
+    font-weight: 500;
+}
+
+.resultado-z {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: var(--esp-1) var(--esp-3);
+    margin-top: var(--esp-1);
+    font-family: var(--fuente-titulo);
+    font-size: var(--texto-valor);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+}
+
+.resultado-z-etiqueta {
+    color: var(--pizarra-honda);
+    font-size: var(--texto-seccion);
+    font-weight: 500;
+}
+
+.resultado-variables,
+.resultado-holguras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1) var(--esp-5);
+    margin: var(--esp-2) 0 0;
+    font-variant-numeric: tabular-nums;
+}
+
+.resultado-variables div,
+.resultado-holguras div {
+    display: flex;
+    gap: var(--esp-2);
+}
+
+.resultado-variables dt::after,
+.resultado-holguras dt::after {
+    content: ' =';
+}
+
+.resultado-variables dd,
+.resultado-holguras dd {
+    margin: 0;
+}
+
+.resultado-variables {
+    font-family: var(--fuente-titulo);
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.resultado-holguras {
+    margin-top: 0;
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+}
+
+.resumen-resultado .nota {
+    margin-top: var(--esp-3);
+}
+
+/* Diagnósticos: el marco dice la causa. Cerrado: no hay región factible.
+   Abierto a la derecha: nada acota la función objetivo. */
+.paso[data-estado="no-factible"],
+.paso[data-estado="no-acotado"] {
+    padding: var(--esp-4);
+}
+
+.paso[data-estado="no-factible"] {
+    border: 2px solid var(--no-factible);
+    border-radius: var(--radio-m);
+    background: var(--no-factible-fondo);
+}
+
+.paso[data-estado="no-factible"] h3 { color: var(--no-factible); }
+.paso[data-estado="no-factible"] h3::before { content: '✕'; }
+
+.paso[data-estado="no-acotado"] {
+    border: 2px solid var(--no-acotado);
+    border-right: 0;
+    border-radius: var(--radio-m) 0 0 var(--radio-m);
+    background: var(--no-acotado-fondo);
+}
+
+.paso[data-estado="no-acotado"] h3 { color: var(--no-acotado); }
+.paso[data-estado="no-acotado"] h3::before { content: '∞'; }
+
+.paso[data-estado="no-acotado"] .columna-pivote {
+    --fondo-celda: var(--no-acotado-fondo);
+    --reglas-celda: inset 2px 0 0 var(--no-acotado), inset -2px 0 0 var(--no-acotado);
+}
+
+.paso[data-estado="no-acotado"] .marca-eje {
+    color: var(--no-acotado);
+}
+
+.paso[data-estado="no-acotado"] .muestra-columna {
+    background: var(--no-acotado-fondo);
+    box-shadow: inset 2px 0 0 var(--no-acotado), inset -2px 0 0 var(--no-acotado);
+}
+
+.paso[data-estado="no-factible"] .leyenda,
+.paso[data-estado="no-acotado"] .leyenda,
+.paso[data-estado="no-factible"] .nota,
+.paso[data-estado="no-acotado"] .nota {
+    color: var(--tinta);
+}
+
+.fila-atascada > * {
+    --fondo-celda: var(--no-factible-fondo);
+    --reglas-celda: inset 0 2px 0 var(--no-factible), inset 0 -2px 0 var(--no-factible);
+}
+
+.fila-atascada .celda-base,
+.fila-atascada .marca-eje {
+    color: var(--no-factible);
+}
+
+.contador-detenido .contador-cifra.vigente {
+    color: var(--no-factible);
+    text-decoration-color: var(--no-factible);
+}
+
+.contador-nota {
+    color: var(--pizarra-honda);
+    font-size: 0.9375rem;
+    font-weight: 400;
+}
+
+.contador-detenido .contador-nota {
+    color: var(--no-factible);
+    font-weight: 500;
+}
+
+.btn-editar {
+    margin-top: var(--esp-4);
+}
+
+@media (max-width: 720px) {
+    .paso[data-estado="no-factible"],
+    .paso[data-estado="no-acotado"] {
+        padding: var(--esp-3);
     }
 }
