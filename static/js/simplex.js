@@ -163,10 +163,11 @@ $('theme').onclick = () => {
 };
 
 function mostrarError(msg) { $('error').textContent = msg; }
-function ocultar() { mostrarError(''); detener(); ['result', 'interp', 'sens', 'steps', 'path', 'whatif'].forEach(id => $(id).hidden = true); }
+function ocultar() { mostrarError(''); detener(); ['result', 'interp', 'sens', 'steps', 'path', 'whatif', 'dual'].forEach(id => $(id).hidden = true); }
 
 /* ───────── efectos ───────── */
 function contar(destino, hasta) {
+  destino.dataset.final = fmt(hasta);   // el informe impreso usa siempre el valor final
   if (REDUCIR) { destino.textContent = fmt(hasta); return; }
   const t0 = performance.now(), dur = 1000;
   (function paso(t) {
@@ -374,6 +375,27 @@ $('p-next').onclick = () => { if (R) { detener(); irA(R.k + 1, true); } };
 $('p-prev').onclick = () => { if (R) { detener(); irA(R.k - 1, true); } };
 $('p-reset').onclick = () => { if (R) { detener(); irA(0, true); } };
 
+/* ───────── el dual ───────── */
+function mostrarDual(d) {
+  const D = d.dual, esMin = D.signo === -1;
+  $('dual-intro').textContent =
+    'Cada restricción del problema original se vuelve una variable del dual (yᵢ: lo que vale una unidad extra de ese recurso) y cada variable ' +
+    'se vuelve una restricción. El dual minimiza el valor total de los recursos y, en el óptimo, da el mismo resultado.' +
+    (esMin ? ' Como el problema original se minimiza, el método trabaja con −Z; por eso aparece como max Z′ y W* = −Z*.' : '');
+  $('d-primal').textContent = D.primal_modelo.join('\n');
+  $('d-dual').textContent = D.dual_modelo.join('\n');
+  const ok = D.fuerte;
+  $('d-banner').replaceChildren(
+    el('span', {class: 'dw'}, `W* = ${fmt(D.w)}`), el('span', {class: 'ig'}, '='), el('span', {class: 'dw'}, `${esMin ? '−' : ''}Z* = ${fmt(D.signo * d.z)}`),
+    el('span', {class: 'badge' + (ok ? '' : ' warn')}, ok ? '✔ dualidad fuerte' : '✗ no coincide'));
+  const marca = b => b ? '✔' : '✗';
+  tabla($('d-y'), ['Variable', 'Recurso', 'y*', 'Holgura del recurso', 'y* · holgura', 'Complementaria'],
+    D.y.map(y => [y.nombre, y.recurso, fmt(y.valor), fmt(y.holgura), fmt(y.valor * y.holgura), marca(y.complementaria)]),
+    i => D.y[i].valor !== 0);
+  tabla($('d-v'), ['Variable', 'x*', 'Exceso del dual (zⱼ − cⱼ)', 'x* · exceso', 'Complementaria'],
+    D.restricciones.map(r => [r.variable, fmt(r.x), fmt(r.exceso), fmt(r.x * r.exceso), marca(r.complementaria)]));
+}
+
 /* ───────── modo "¿y si…?" ───────── */
 let QS = null;   // recurso seleccionado y verificación pendiente
 
@@ -460,7 +482,8 @@ function mostrar(d, cuerpo) {
   $('sens').hidden = !optimo;
   $('path').hidden = !optimo;
   $('whatif').hidden = !optimo;
-  if (optimo) prepararQueSi(d, cuerpo);
+  $('dual').hidden = !optimo;
+  if (optimo) { prepararQueSi(d, cuerpo); mostrarDual(d); }
   const stats = $('stats');
   stats.replaceChildren();
   let confetiEn = null;
@@ -530,4 +553,41 @@ $('solve').onclick = async () => {
   } catch (e) { mostrarError(e.message); }
 };
 
+/* ───────── informe en PDF (impresión del navegador) ───────── */
+let abiertos = null, pasoAntes = null, tituloOriginal = document.title;
+$('print').onclick = () => window.print();
+window.addEventListener('beforeprint', () => {
+  const hoy = new Date();
+  const grande = document.querySelector('#stats .stat.big strong');
+  if (grande && grande.dataset.final) grande.textContent = grande.dataset.final;   // por si el contador seguía animando
+  pasoAntes = null;
+  if (R) {                                  // el informe muestra la ruta completa, hasta el óptimo
+    detener(); pasoAntes = R.k; irA(R.estados.length - 1, false);
+    if (R.n !== 2) $('path-box').style.display = 'none';
+  }
+  $('print-head').replaceChildren(el('h1', {}, 'Informe · Método Simplex'),
+    el('p', {}, `Generado el ${hoy.toLocaleDateString('es-CO', {year: 'numeric', month: 'long', day: 'numeric'})} · OptiLab / USTA`));
+  $('print-contexto').textContent = model.contexto.trim() || '(sin contexto)';
+  const dets = [...document.querySelectorAll('#tables details')];
+  abiertos = dets.map(d => d.open);
+  dets.forEach(d => d.open = true);
+  tituloOriginal = document.title;
+  document.title = `Informe Simplex ${hoy.toISOString().slice(0, 10)}`;   // nombre sugerido del PDF
+});
+window.addEventListener('afterprint', () => {
+  document.title = tituloOriginal;
+  if (R && pasoAntes !== null) { $('path-box').style.display = ''; irA(pasoAntes, false); }
+  if (abiertos) [...document.querySelectorAll('#tables details')].forEach((d, i) => d.open = abiertos[i]);
+});
+
 render();
+
+/* ───────── enlaces directos: ?ejemplo=muebles&resolver=1 ───────── */
+(function enlaceDirecto() {
+  const q = new URLSearchParams(location.search), id = q.get('ejemplo');
+  if (id && EJEMPLOS.some(e => e.id === id)) {
+    $('ejemplos').value = id;
+    $('ejemplos').dispatchEvent(new Event('change'));
+    if (q.get('resolver') === '1') $('solve').click();
+  }
+})();

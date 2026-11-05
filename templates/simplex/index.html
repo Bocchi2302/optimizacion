@@ -39,6 +39,7 @@
   <div class="marquee" aria-hidden="true"><div class="track"><span>MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦ MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦&nbsp;</span><span>MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦ MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦&nbsp;</span></div></div>
 
   <main data-api-url="{{ url_for('simplex_bp.calcular') }}" data-max-vars="{{ max_variables }}" data-max-res="{{ max_restricciones }}">
+    <div id="print-head" class="print-only"></div>
     <section class="card wide c1">
       <span class="tag">01 · MODELO</span><h2>Plantea el problema</h2>
       <p class="muted">Variables x ≥ 0 y restricciones ≤ con lado derecho ≥ 0. Para ≥ o = existe el Simplex de dos fases. Acepta enteros, decimales y fracciones (1/3).</p>
@@ -55,6 +56,7 @@
     <section class="card wide c2">
       <span class="tag">02 · CONTEXTO</span><h2>¿De qué trata?</h2>
       <textarea id="contexto" rows="4" placeholder="Cuéntalo con tus palabras: qué se produce, qué recursos hay, qué se quiere lograr…"></textarea>
+      <p id="print-contexto" class="print-only"></p>
       <div class="actions">
         <label class="ej">Ejemplos <select id="ejemplos"><option value="">Elige un ejemplo…</option></select></label>
         <button class="btn primary" id="solve" type="button">Resolver <span aria-hidden="true">→</span></button>
@@ -66,6 +68,7 @@
     <section class="card wide c3" id="result" hidden>
       <span class="tag">03 · RESULTADO</span><h2>Solución óptima</h2>
       <div id="stats"></div>
+      <div class="actions noprint"><button id="print" type="button" class="btn">📄 Descargar informe (PDF)</button><span class="muted">Se abre la impresión: elige «Guardar como PDF».</span></div>
     </section>
 
     <section class="card wide c4" id="path" hidden>
@@ -102,15 +105,29 @@
       <div class="scroll"><table id="t-var"></table></div>
     </section>
 
+    <section class="card wide c9" id="dual" hidden>
+      <span class="tag">07 · EL DUAL</span><h2>El mismo problema, visto desde los recursos</h2>
+      <p class="muted" id="dual-intro"></p>
+      <div class="dual-grid">
+        <div><h3>Problema original</h3><pre class="preview" id="d-primal"></pre></div>
+        <div><h3>Su dual</h3><pre class="preview dual" id="d-dual"></pre></div>
+      </div>
+      <div class="dual-banner" id="d-banner"></div>
+      <h3>Valores del dual: lo que vale una unidad extra de cada recurso</h3>
+      <div class="scroll"><table id="d-y"></table></div>
+      <h3>Holguras complementarias en las variables</h3>
+      <div class="scroll"><table id="d-v"></table></div>
+    </section>
+
     <section class="card wide c8" id="whatif" hidden>
-      <span class="tag">07 · ¿Y SI…?</span><h2>Mueve un recurso y mira qué pasa</h2>
+      <span class="tag">08 · ¿Y SI…?</span><h2>Mueve un recurso y mira qué pasa</h2>
       <p class="muted">Elige un recurso y desliza su límite. Dentro del rango de validez, Z y las variables cambian en línea recta; al soltar, lo comprobamos resolviendo el Simplex de nuevo.</p>
       <div class="pills" id="wi-pills" role="tablist" aria-label="Recurso a modificar"></div>
       <div id="wi-body"></div>
     </section>
 
     <section class="card wide c7" id="steps" hidden>
-      <span class="tag">08 · PROCEDIMIENTO</span><h2>Tabla por tabla</h2>
+      <span class="tag">09 · PROCEDIMIENTO</span><h2>Tabla por tabla</h2>
       <p class="muted" id="modelo"></p>
       <p class="muted">LD es el lado derecho; la celda roja pulsante es el pivote de la siguiente iteración. La última fila es Z (zⱼ − cⱼ).</p>
       <div id="tables"></div>

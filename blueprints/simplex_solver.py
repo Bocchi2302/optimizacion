@@ -45,6 +45,12 @@ def _t(v):
     return texto.replace("-", "−")
 
 
+def _p(v):
+    """Como _t, pero encierra las fracciones entre paréntesis para que 110/3 ÷ 2/3 no se lea ambiguo."""
+    texto = _t(v)
+    return f"({texto})" if "/" in texto else texto
+
+
 def _texto(valor, defecto, largo=40):
     texto = str(valor or "").strip()[:largo]
     return texto or defecto
@@ -145,7 +151,7 @@ class _Tabla:
                   "se elige por la regla de Bland (menor índice) para evitar ciclos" if bland else
                   "es el más negativo de la fila Z")
         listado = "; ".join(
-            f"{self.nombres[self.base[i]]}: {_t(self.T[i][-1])}/{_t(self.T[i][entra])} = {_t(razones[i])}"
+            f"{self.nombres[self.base[i]]}: {_p(self.T[i][-1])}/{_p(self.T[i][entra])} = {_t(razones[i])}"
             for i in range(self.m) if razones[i] is not None)
         minimo, sale = razones[r], self.base[r]
         empate = sum(1 for x in razones if x == minimo) > 1
@@ -257,6 +263,40 @@ def _sensibilidad(t: _Tabla, p):
     return sens_vars, sens_res
 
 
+def _dual(t: _Tabla, p, x, holguras):
+    """Dual del problema interno (max c'x, Ax <= b): min b·y, Aᵀy >= c', y >= 0.
+
+    Sus valores salen de la tabla óptima: y_i es la fila Z bajo la holgura s_i y el exceso de cada
+    restricción dual es el costo reducido zj − cj. Se comprueba además la dualidad fuerte (W* = Z')
+    y las holguras complementarias (x_j·exceso_j = 0 y y_i·holgura_i = 0).
+    """
+    n, m = t.n, t.m
+    y = [t.Z[n + i] for i in range(m)]
+    excesos = [t.Z[j] for j in range(n)]
+    w = sum((p["b"][i] * y[i] for i in range(m)), Fraction(0))
+
+    def lineal(coefs, nombres):
+        partes = [f"{_t(a)}·{nom}" for a, nom in zip(coefs, nombres) if a != 0]
+        return " + ".join(partes).replace("+ −", "− ") or "0"
+
+    nom_y = [f"y{i + 1}" for i in range(m)]
+    primal = ["max Z' = " + lineal(t.c, p["nombres"]), "s.a."]
+    primal += [f"   {lineal(p['A'][i], p['nombres'])}  ≤  {_t(p['b'][i])}" for i in range(m)]
+    primal.append("   " + ", ".join(p["nombres"]) + " ≥ 0")
+    dual = ["min W = " + lineal(p["b"], nom_y), "s.a."]
+    dual += [f"   {lineal([p['A'][i][j] for i in range(m)], nom_y)}  ≥  {_t(t.c[j])}" for j in range(n)]
+    dual.append("   " + ", ".join(nom_y) + " ≥ 0")
+    z_interna = sum((t.c[j] * x[j] for j in range(n)), Fraction(0))
+    return {
+        "primal_modelo": primal, "dual_modelo": dual, "w": w, "signo": t.signo,
+        "fuerte": w == z_interna,
+        "y": [{"nombre": f"y{i + 1}", "recurso": p["nom_res"][i], "valor": y[i], "holgura": holguras[i],
+               "complementaria": y[i] * holguras[i] == 0} for i in range(m)],
+        "restricciones": [{"variable": p["nombres"][j], "x": x[j], "exceso": excesos[j],
+                           "complementaria": x[j] * excesos[j] == 0} for j in range(n)],
+    }
+
+
 def resolver(payload):
     """Resuelve el problema y devuelve un diccionario listo para convertir a JSON."""
     from .simplex_interpretacion import interpretar   # import tardío: evita ciclo de módulos
@@ -278,6 +318,7 @@ def resolver(payload):
         res["degenerado"] = any(t.T[i][-1] == 0 for i in range(t.m))
         res["optimos_multiples"] = any(t.Z[j] == 0 for j in range(t.n + t.m) if j not in t.base)
         res["sens_variables"], res["sens_restricciones"] = _sensibilidad(t, p)
+        res["dual"] = _dual(t, p, res["x"], res["holguras"])
     else:
         res["variable_no_acotada"] = t.nombres[columna]
     res["interpretacion"] = interpretar(res)

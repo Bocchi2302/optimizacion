@@ -60,6 +60,38 @@ class SimplexNormalTests(unittest.TestCase):
             for j in range(2):
                 self.assertAlmostEqual(real["x"][j], r["x"][j] + planta2["efecto_variables"][j] * delta, places=6)
 
+    def test_dual_de_wyndor(self):
+        d = resolver(problema("max", [3, 5], [([1, 0], 4), ([0, 2], 12), ([3, 2], 18)]))["dual"]
+        self.assertEqual(d["dual_modelo"][0], "min W = 4·y1 + 12·y2 + 18·y3")
+        self.assertEqual(d["dual_modelo"][2:4], ["   1·y1 + 3·y3  ≥  3", "   2·y2 + 2·y3  ≥  5"])
+        self.assertEqual([y["valor"] for y in d["y"]], [0, 1.5, 1])
+        self.assertEqual(d["w"], 36)
+        self.assertTrue(d["fuerte"])
+        self.assertTrue(all(y["complementaria"] for y in d["y"]))
+        self.assertTrue(all(r["complementaria"] for r in d["restricciones"]))
+
+    def test_dualidad_fuerte_y_holguras_complementarias_en_problemas_aleatorios(self):
+        import random
+        rnd = random.Random(3)
+        revisados = 0
+        for _ in range(150):
+            n, m = rnd.randint(2, 4), rnd.randint(2, 5)
+            sentido = rnd.choice(["max", "min"])
+            c = [rnd.randint(-3, 8) for _ in range(n)]
+            rest = [([rnd.randint(0, 6) for _ in range(n)], rnd.randint(1, 25)) for _ in range(m)]
+            r = resolver(problema(sentido, c, rest))
+            if r["estado"] != "optimo":
+                continue
+            d = r["dual"]
+            signo = 1 if sentido == "max" else -1
+            self.assertTrue(d["fuerte"], (sentido, c, rest))
+            self.assertAlmostEqual(d["w"], signo * r["z"], places=6)
+            self.assertTrue(all(y["complementaria"] for y in d["y"]) and all(v["complementaria"] for v in d["restricciones"]))
+            self.assertTrue(all(y["valor"] >= -1e-9 for y in d["y"]))        # el dual es factible: y >= 0
+            self.assertTrue(all(v["exceso"] >= -1e-9 for v in d["restricciones"]))   # y Aᵀy >= c'
+            revisados += 1
+        self.assertGreater(revisados, 50)
+
     def test_explicacion_de_no_acotado(self):
         its = resolver(problema("max", [1, 1], [([1, -1], 2)]))["iterations"]
         self.assertIn("sin límite", its[-1]["explicacion"])

@@ -119,6 +119,17 @@ body.night .preview{background:#0b0912}
 .p-info{font-size:14px;font-weight:500;background:var(--card);border:2.5px dashed var(--edge);border-radius:12px;padding:12px;min-height:74px;line-height:1.5;margin:14px 0 0}
 #zchart{width:100%;height:auto;display:block}#zchart text{font-family:var(--mono);font-weight:700;fill:var(--ink)}
 
+/* ───────── dual ───────── */
+.c9 .tag{background:var(--c5)}
+.dual-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.dual-grid h3{margin-top:18px}
+.preview.dual{background:var(--c2);color:#fff;box-shadow:4px 4px 0 var(--shadow)}
+.dual-banner{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:22px 0 4px;padding:16px 20px;border:var(--bd);border-radius:14px;background:var(--ink);box-shadow:5px 5px 0 var(--shadow)}
+.dual-banner .dw{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,40px);letter-spacing:-.03em;color:var(--c3)}
+.dual-banner .ig{font-family:var(--display);font-weight:800;font-size:34px;color:var(--paper)}
+.dual-banner .badge{margin-left:auto}
+@media(max-width:880px){.dual-grid{grid-template-columns:1fr}}
+
 /* ───────── ¿y si…? ───────── */
 .c8 .tag{background:var(--c6)}
 .pills{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 6px}
@@ -196,6 +207,38 @@ details .scroll{padding:0 16px 16px}
   .hero-grid,.path-grid{grid-template-columns:1fr}.board{display:none}
   .card{padding:30px 16px 18px;box-shadow:6px 6px 0 var(--shadow)}
   .marquee{font-size:16px}
+}
+/* ───────── informe impreso / PDF ───────── */
+.print-only{display:none}
+@media print{
+  @page{size:A4;margin:13mm}
+  body,body.night{--paper:#fff;--card:#fff;--ink:#17120f;--muted:#4a423c;--edge:#17120f;--shadow:#17120f;--dots:transparent;--field:#fff;
+    background:#fff;background-image:none;color:#17120f;font-size:12.5px;overflow:visible}
+  *{animation:none!important;transition:none!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hero,.marquee,.foot,.noprint,#error,.player,#whatif,.c1 .controls,.c1 .scroll,.c1 > p.muted,.c2 textarea,.c2 .actions,.ej-nota,.confetti{display:none!important}
+  .print-only{display:block}
+  #print-head h1{display:block;font-size:30px;margin:0 0 2px;letter-spacing:-.03em}
+  #print-head p{margin:0 0 16px;color:var(--muted);font-family:var(--mono);font-size:12px}
+  main{max-width:none;padding:0;gap:26px;display:block}
+  .card{box-shadow:none;border-width:2px;margin:0 0 24px;padding:16px 16px 14px;break-inside:auto}
+  .card:not([hidden]){display:block}.card[hidden]{display:none!important}
+  .tag{position:static;display:inline-block;transform:none;box-shadow:none;border-width:2px;margin:0 0 8px}
+  h2{font-size:24px}
+  .preview{box-shadow:none;background:#f1ece0;color:#17120f;border:2px solid #17120f}
+  #print-contexto{margin:6px 0 0;line-height:1.5}
+  #stats{gap:10px}.stat{box-shadow:none;border-width:2px;break-inside:avoid}
+  .stat.big{transform:none}.stat.big strong{font-size:44px}
+  .path-grid{grid-template-columns:1.4fr 1fr;gap:14px}.path-box{box-shadow:none}
+  .p-info{border-style:solid;max-height:none}.explica-corta{max-height:none;overflow:visible}
+  .interp-sec li,.interp-sec h3,details,table,.explica,.path-box{break-inside:avoid}
+  .interp-sec li{box-shadow:none;border-width:2px}.interp-sec h3,.interp-sec.concl li{box-shadow:none}
+  .scroll{overflow:visible}
+  details{box-shadow:none!important;transform:none!important;margin:10px 0}
+  details>summary{list-style:none}details>summary::before,details[open]>summary::before{content:""!important}
+  #path{break-inside:avoid}
+  .explica{box-shadow:none;margin:0 10px 10px}
+  table{font-size:11.5px}.tableau{font-size:11px}
+  .pivot{animation:none}
 }
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
