@@ -55,7 +55,11 @@
     <section class="card wide c2">
       <span class="tag">02 · CONTEXTO</span><h2>¿De qué trata?</h2>
       <textarea id="contexto" rows="4" placeholder="Cuéntalo con tus palabras: qué se produce, qué recursos hay, qué se quiere lograr…"></textarea>
-      <div class="actions"><button id="sample" type="button" class="btn">Cargar ejemplo</button><button class="btn primary" id="solve" type="button">Resolver <span aria-hidden="true">→</span></button></div>
+      <div class="actions">
+        <label class="ej">Ejemplos <select id="ejemplos"><option value="">Elige un ejemplo…</option></select></label>
+        <button class="btn primary" id="solve" type="button">Resolver <span aria-hidden="true">→</span></button>
+      </div>
+      <p class="muted ej-nota" id="ej-nota" aria-live="polite"></p>
       <div id="error" role="alert"></div>
     </section>
 
@@ -98,8 +102,15 @@
       <div class="scroll"><table id="t-var"></table></div>
     </section>
 
+    <section class="card wide c8" id="whatif" hidden>
+      <span class="tag">07 · ¿Y SI…?</span><h2>Mueve un recurso y mira qué pasa</h2>
+      <p class="muted">Elige un recurso y desliza su límite. Dentro del rango de validez, Z y las variables cambian en línea recta; al soltar, lo comprobamos resolviendo el Simplex de nuevo.</p>
+      <div class="pills" id="wi-pills" role="tablist" aria-label="Recurso a modificar"></div>
+      <div id="wi-body"></div>
+    </section>
+
     <section class="card wide c7" id="steps" hidden>
-      <span class="tag">07 · PROCEDIMIENTO</span><h2>Tabla por tabla</h2>
+      <span class="tag">08 · PROCEDIMIENTO</span><h2>Tabla por tabla</h2>
       <p class="muted" id="modelo"></p>
       <p class="muted">LD es el lado derecho; la celda roja pulsante es el pivote de la siguiente iteración. La última fila es Z (zⱼ − cⱼ).</p>
       <div id="tables"></div>
