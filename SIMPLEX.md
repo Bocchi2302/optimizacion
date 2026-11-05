@@ -17,6 +17,5 @@ Para probar: `python -m unittest discover -s tests -p test_simplex.py`. El caso 
 - **Explicación de cada iteración** (`iterations[k].explicacion` y `ratios`): por qué entra y sale cada variable, con la columna de razones `LD ÷ col.`.
 - **Ejemplos** (selector en la tarjeta de contexto): 4 problemas de aplicación y 3 casos especiales (óptimos múltiples, degenerado y no acotado). Se pueden abrir por enlace: `/metodo_simplex/?ejemplo=muebles&resolver=1` (ids: `puertas`, `muebles`, `jugos`, `inversion`, `multiples`, `degenerado`, `no_acotado`).
 - **Ruta del algoritmo**: con 2 variables, un punto recorre los vértices de la región factible; la gráfica de Z funciona con cualquier número de variables.
-- **El dual** (`dual` en la respuesta): modelo dual, valores `y*`, dualidad fuerte (`W* = Z*`) y holguras complementarias.
 - **¿Y si…?**: deslizador sobre un recurso dentro de su rango de validez (`sens_restricciones[i].efecto_variables`); al soltar, se verifica volviendo a llamar a la API.
 - **Informe en PDF**: botón «Descargar informe»; usa la impresión del navegador con una hoja de estilo propia (`@media print`).

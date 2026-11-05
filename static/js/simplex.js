@@ -163,7 +163,7 @@ $('theme').onclick = () => {
 };
 
 function mostrarError(msg) { $('error').textContent = msg; }
-function ocultar() { mostrarError(''); detener(); ['result', 'interp', 'sens', 'steps', 'path', 'whatif', 'dual'].forEach(id => $(id).hidden = true); }
+function ocultar() { mostrarError(''); detener(); ['result', 'interp', 'sens', 'steps', 'path', 'whatif'].forEach(id => $(id).hidden = true); }
 
 /* ───────── efectos ───────── */
 function contar(destino, hasta) {
@@ -375,27 +375,6 @@ $('p-next').onclick = () => { if (R) { detener(); irA(R.k + 1, true); } };
 $('p-prev').onclick = () => { if (R) { detener(); irA(R.k - 1, true); } };
 $('p-reset').onclick = () => { if (R) { detener(); irA(0, true); } };
 
-/* ───────── el dual ───────── */
-function mostrarDual(d) {
-  const D = d.dual, esMin = D.signo === -1;
-  $('dual-intro').textContent =
-    'Cada restricción del problema original se vuelve una variable del dual (yᵢ: lo que vale una unidad extra de ese recurso) y cada variable ' +
-    'se vuelve una restricción. El dual minimiza el valor total de los recursos y, en el óptimo, da el mismo resultado.' +
-    (esMin ? ' Como el problema original se minimiza, el método trabaja con −Z; por eso aparece como max Z′ y W* = −Z*.' : '');
-  $('d-primal').textContent = D.primal_modelo.join('\n');
-  $('d-dual').textContent = D.dual_modelo.join('\n');
-  const ok = D.fuerte;
-  $('d-banner').replaceChildren(
-    el('span', {class: 'dw'}, `W* = ${fmt(D.w)}`), el('span', {class: 'ig'}, '='), el('span', {class: 'dw'}, `${esMin ? '−' : ''}Z* = ${fmt(D.signo * d.z)}`),
-    el('span', {class: 'badge' + (ok ? '' : ' warn')}, ok ? '✔ dualidad fuerte' : '✗ no coincide'));
-  const marca = b => b ? '✔' : '✗';
-  tabla($('d-y'), ['Variable', 'Recurso', 'y*', 'Holgura del recurso', 'y* · holgura', 'Complementaria'],
-    D.y.map(y => [y.nombre, y.recurso, fmt(y.valor), fmt(y.holgura), fmt(y.valor * y.holgura), marca(y.complementaria)]),
-    i => D.y[i].valor !== 0);
-  tabla($('d-v'), ['Variable', 'x*', 'Exceso del dual (zⱼ − cⱼ)', 'x* · exceso', 'Complementaria'],
-    D.restricciones.map(r => [r.variable, fmt(r.x), fmt(r.exceso), fmt(r.x * r.exceso), marca(r.complementaria)]));
-}
-
 /* ───────── modo "¿y si…?" ───────── */
 let QS = null;   // recurso seleccionado y verificación pendiente
 
@@ -482,8 +461,7 @@ function mostrar(d, cuerpo) {
   $('sens').hidden = !optimo;
   $('path').hidden = !optimo;
   $('whatif').hidden = !optimo;
-  $('dual').hidden = !optimo;
-  if (optimo) { prepararQueSi(d, cuerpo); mostrarDual(d); }
+  if (optimo) prepararQueSi(d, cuerpo);
   const stats = $('stats');
   stats.replaceChildren();
   let confetiEn = null;

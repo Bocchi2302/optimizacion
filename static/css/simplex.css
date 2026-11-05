@@ -119,17 +119,6 @@ body.night .preview{background:#0b0912}
 .p-info{font-size:14px;font-weight:500;background:var(--card);border:2.5px dashed var(--edge);border-radius:12px;padding:12px;min-height:74px;line-height:1.5;margin:14px 0 0}
 #zchart{width:100%;height:auto;display:block}#zchart text{font-family:var(--mono);font-weight:700;fill:var(--ink)}
 
-/* ───────── dual ───────── */
-.c9 .tag{background:var(--c5)}
-.dual-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-.dual-grid h3{margin-top:18px}
-.preview.dual{background:var(--c2);color:#fff;box-shadow:4px 4px 0 var(--shadow)}
-.dual-banner{display:flex;flex-wrap:wrap;align-items:center;gap:14px;margin:22px 0 4px;padding:16px 20px;border:var(--bd);border-radius:14px;background:var(--ink);box-shadow:5px 5px 0 var(--shadow)}
-.dual-banner .dw{font-family:var(--display);font-weight:800;font-size:clamp(26px,4vw,40px);letter-spacing:-.03em;color:var(--c3)}
-.dual-banner .ig{font-family:var(--display);font-weight:800;font-size:34px;color:var(--paper)}
-.dual-banner .badge{margin-left:auto}
-@media(max-width:880px){.dual-grid{grid-template-columns:1fr}}
-
 /* ───────── ¿y si…? ───────── */
 .c8 .tag{background:var(--c6)}
 .pills{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 6px}
