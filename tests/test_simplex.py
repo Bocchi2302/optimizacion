@@ -33,6 +33,37 @@ class SimplexNormalTests(unittest.TestCase):
         self.assertIsNone(its[-1]["pivot"])
         self.assertEqual(its[-1]["rows"][-1][-1], 36)
 
+    def test_cada_tabla_explica_el_paso_y_muestra_razones(self):
+        its = resolver(problema("max", [3, 5], [([1, 0], 4), ([0, 2], 12), ([3, 2], 18)]))["iterations"]
+        self.assertEqual(its[0]["ratios"], [None, 6, 9])
+        self.assertIn("Punto de partida", its[0]["explicacion"])
+        self.assertIn("Entra x2", its[0]["explicacion"])
+        self.assertIn("12/2 = 6", its[0]["explicacion"])
+        self.assertIn("sale de la base", its[0]["explicacion"])
+        self.assertIn("único valor negativo", its[1]["explicacion"])
+        self.assertIsNone(its[-1]["ratios"])
+        self.assertIn("óptima", its[-1]["explicacion"])
+        self.assertIn("Z = 36", its[-1]["explicacion"])
+
+    def test_efecto_de_un_recurso_sobre_las_variables_predice_el_nuevo_optimo(self):
+        base = problema("max", [3, 5], [([1, 0], 4), ([0, 2], 12), ([3, 2], 18)])
+        r = resolver(base)
+        planta2 = r["sens_restricciones"][1]
+        self.assertAlmostEqual(planta2["efecto_variables"][0], -1 / 3, places=6)
+        self.assertAlmostEqual(planta2["efecto_variables"][1], 0.5, places=6)
+        # dentro del rango [6, 18] la predicción lineal coincide con volver a resolver
+        for nuevo in (6, 9, 15, 18):
+            delta = nuevo - planta2["rhs"]
+            base["restricciones"][1]["rhs"] = nuevo
+            real = resolver(base)
+            self.assertAlmostEqual(real["z"], r["z"] + planta2["precio_sombra"] * delta, places=6)
+            for j in range(2):
+                self.assertAlmostEqual(real["x"][j], r["x"][j] + planta2["efecto_variables"][j] * delta, places=6)
+
+    def test_explicacion_de_no_acotado(self):
+        its = resolver(problema("max", [1, 1], [([1, -1], 2)]))["iterations"]
+        self.assertIn("sin límite", its[-1]["explicacion"])
+
     def test_minimizar_con_costos_negativos(self):
         # min -x - y  s.a. x + y <= 4, x <= 3   ->  Z = -4
         r = resolver(problema("min", [-1, -1], [([1, 1], 4), ([1, 0], 3)]))
