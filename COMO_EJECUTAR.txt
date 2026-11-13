@@ -1,0 +1,140 @@
+====================================================
+  CÓMO EJECUTAR EL PROYECTO EN LOCAL
+  Calculadora de Métodos de Optimización (Flask)
+====================================================
+
+REQUISITOS PREVIOS
+------------------
+- Python 3.10 o superior  (se recomienda 3.12+)
+- pip actualizado
+
+Verificá tu versión de Python  en PowerShell con:
+    python --version
+
+
+1. CLONAR O DESCARGAR EL PROYECTO
+-----------------------------------
+Si usás Git:
+    git clone https://github.com/Bocchi2302/optimizacion.git
+    cd optimizacion
+
+Si lo descargaste como ZIP, descomprimilo y entrá a la carpeta.
+
+
+2. CREAR UN ENTORNO VIRTUAL
+-----------------------------
+(Recomendado para aislar las dependencias)
+
+En Windows (PowerShell / CMD):
+    python -m venv venv
+    venv\Scripts\activate
+
+En macOS / Linux:
+    python3 -m venv venv
+    source venv/bin/activate
+
+Cuando el entorno esté activo verás (venv) al inicio del prompt.
+
+
+3. INSTALAR LAS DEPENDENCIAS
+-------------------------------
+Con el entorno virtual activo, ejecutá:
+    pip install -r requirements.txt
+
+Dependencias principales:
+  - Flask          → framework web
+  - markupsafe     → se instala automáticamente con Flask
+  - werkzeug       → se instala automáticamente con Flask
+  - playwright     → solo para los tests end-to-end (e2e)
+
+Si vas a correr los tests e2e también necesitás instalar
+los navegadores de Playwright:
+    playwright install chromium
+
+
+4. EJECUTAR LA APLICACIÓN
+---------------------------
+    python app.py
+
+La app arrancará en modo producción (debug=False) en el puerto 5000.
+Abrí tu navegador y navegá a:
+    http://127.0.0.1:5000
+
+
+Para activar el modo DEBUG (recarga automática al editar código):
+    flask --app app run --debug
+  o bien editá app.py y cambiá  debug=False  por  debug=True
+
+
+5. RUTAS DISPONIBLES
+----------------------
+  /                        → Página de inicio (selector de métodos)
+  /metodo_grafico/...      → Método Gráfico (2 variables)
+  /metodo_mod/...          → Método MOD
+  /metodo_gran_m/...       → Método de la Gran M
+  /metodo_simplex/...      → Método Simplex
+  /metodo_dos_fases/...    → Método de las Dos Fases
+  /metodo_vogel/...        → Método de Vogel (transporte)
+  /regresion_simplex/...   → Regresión Minimax por Simplex
+
+
+6. EJECUTAR LOS TESTS
+-----------------------
+Asegurate de tener el entorno virtual activo y luego:
+
+  Tests unitarios (no requieren navegador):
+      python -m pytest tests/ -v --ignore=tests/e2e_dos_fases_navegador.py
+
+  Tests end-to-end (requieren Playwright + servidor corriendo):
+      # En una terminal, arrancá el servidor:
+      python app.py
+      # En otra terminal:
+      python -m pytest tests/e2e_dos_fases_navegador.py -v
+
+
+7. ESTRUCTURA DEL PROYECTO
+-----------------------------
+  optimizacion/
+  ├── app.py                    → Punto de entrada de Flask
+  ├── requirements.txt          → Dependencias del proyecto
+  ├── blueprints/               → Lógica de cada método (solvers + blueprints Flask)
+  │   ├── grafico_bp.py / grafico_solver.py / ...
+  │   ├── simplex_bp.py / simplex_solver.py / ...
+  │   ├── dos_fases_bp.py / dos_fases_solver.py / ...
+  │   ├── mod_bp.py / mod_solver.py / ...
+  │   ├── gran_m_bp.py
+  │   ├── vogel_bp.py
+  │   └── regresion_bp.py / regresion_solver.py / ...
+  ├── templates/                → Plantillas HTML (Jinja2)
+  │   ├── index.html
+  │   ├── metodo_grafico/
+  │   ├── metodo_simplex/
+  │   ├── metodo_dos_fases/
+  │   ├── metodo_gran_m/
+  │   ├── metodo_mod/
+  │   ├── metodo_vogel/
+  │   └── regresion/
+  ├── static/                   → Archivos estáticos (CSS, JS, imágenes)
+  └── tests/                    → Suite de tests unitarios e2e
+
+
+8. POSIBLES PROBLEMAS COMUNES
+--------------------------------
+  Error: "flask: command not found"
+    → Asegurate de que el entorno virtual esté activo.
+
+  Error: "ModuleNotFoundError: No module named 'flask'"
+    → Ejecutá:  pip install -r requirements.txt
+
+  Puerto 5000 ya en uso:
+    → Cambiá el puerto en app.py:  app.run(debug=False, port=5001)
+    → O bien pasalo por variable de entorno:
+         flask --app app run --port 5001
+
+  Error de Playwright (tests e2e):
+    → Ejecutá:  playwright install chromium
+
+
+====================================================
+  FIN
+====================================================
