@@ -1,0 +1,729 @@
+
+===============================================================================
+         USER MANUAL — OPTIMIZATION METHODS WEB APPLICATION
+         Flask-Based Operations Research Solver
+         Language: English | Audience: Operations Research Students
+===============================================================================
+
+TABLE OF CONTENTS
+-----------------
+  1. Introduction
+  2. Graphical Method
+  3. Simplex Method
+  4. Two-Phase Method
+  5. Big-M Method
+  6. MOD Method (MODI / Transportation)
+  7. Vogel's Method (Transportation)
+  8. Simplex Regression (Minimax / Chebyshev)
+  9. General Tips & Troubleshooting
+
+===============================================================================
+1. INTRODUCTION
+===============================================================================
+
+This web application provides interactive solvers for seven classical methods
+in Operations Research and Linear Programming. It is designed for students who
+want to learn step-by-step how each algorithm works, verify hand calculations,
+and understand the structure of optimization problems.
+
+HOW TO ACCESS
+  - Start the Flask server (python app.py) and open your browser at:
+    http://127.0.0.1:5000
+  - Each method has its own page accessible from the main navigation menu.
+
+GENERAL CONVENTIONS USED THROUGHOUT THE APP
+  - Variables are always non-negative (xi >= 0 is assumed implicitly).
+  - Coefficients can be entered as integers (2), decimals (3.14), or fractions
+    (1/3, 2/5). The parser accepts all three formats.
+  - Blank fields are interpreted as zero coefficients.
+  - The objective function can be either Maximization or Minimization.
+  - Results are shown on the same page after submission.
+
+===============================================================================
+2. GRAPHICAL METHOD
+===============================================================================
+
+WHAT IT IS
+  The Graphical Method solves Linear Programs (LPs) with exactly 2 decision
+  variables (X1 and X2) by plotting each constraint as a line on a 2-D plane,
+  identifying the feasible region, and evaluating the objective function at
+  each corner point (vertex) of that region. The optimum is the vertex that
+  gives the best objective value.
+
+WHEN TO USE IT
+  - When your LP has exactly 2 decision variables.
+  - When you want a visual, geometric understanding of the solution.
+  - As a teaching tool to understand feasibility, boundedness, and optimality.
+  - NOT suitable for problems with 3 or more decision variables.
+
+SYSTEM LIMITS
+  - Variables : exactly 2 (X1 and X2). Fixed — no more, no less.
+  - Constraints: up to 12 constraints (not counting non-negativity).
+  - Coefficient range: any real number between -1,000,000,000 and +1,000,000,000.
+  - Accepted formats: integers, decimals, fractions (e.g. 1/3, 5/7).
+  - Objective: Maximize or Minimize.
+
+TEXT-PROBLEM EXTRACTOR (SPECIAL FEATURE)
+  The Graphical Method page includes an automatic text parser. You can paste
+  the problem statement written in natural language (e.g., from a textbook) and
+  the system will attempt to extract the objective function and constraints
+  automatically, pre-filling the form for you. After extraction, review the
+  fields and correct any misinterpretation before solving.
+
+HOW TO ENTER DATA
+  1. Select "Maximize" or "Minimize" from the objective dropdown.
+  2. Enter the coefficients of X1 and X2 in the objective function row.
+  3. For each constraint, enter:
+       - Coefficient of X1
+       - Coefficient of X2
+       - Inequality type: <= or >=
+       - Right-hand side (RHS) value
+  4. Leave unused constraint rows blank (they will be ignored).
+  5. Click "Solve" to generate the graph and solution.
+
+  ALTERNATIVE: Paste the problem text in the text box and click "Extract".
+  Review the auto-filled form, then click "Solve".
+
+WHAT THE RESULT DISPLAYS
+  - A 2-D plot showing:
+      * Each constraint line drawn across the feasible region.
+      * The shaded feasible region (intersection of all constraints).
+      * All corner points (vertices) labeled with their coordinates.
+      * The optimal vertex highlighted.
+      * An iso-profit / iso-cost line showing the direction of improvement.
+  - A table of all corner points with their objective function values.
+  - The optimal solution: values of X1, X2, and the optimal Z value.
+
+SPECIAL CASES
+  INFEASIBLE: The feasible region is empty (constraints contradict each other).
+    The graph will show no shaded region and the app displays "No feasible
+    solution exists."
+
+  UNBOUNDED: The feasible region extends to infinity in the direction of
+    optimization. The app will detect this and display "The problem is
+    unbounded — no finite optimum exists."
+
+  MULTIPLE OPTIMA: If the objective function line is parallel to one of the
+    constraint boundaries, infinitely many optimal solutions exist along that
+    edge. The app will note "Multiple optimal solutions exist" and show both
+    extreme points.
+
+  DEGENERACY: A vertex where more than 2 constraints intersect. Rare in 2-D
+    but possible; the solver handles it by evaluating all vertices normally.
+
+QUICK EXAMPLE
+  Maximize  Z = 5X1 + 4X2
+  Subject to:
+    6X1 + 4X2 <= 24
+    X1 + 2X2 <= 6
+    X1, X2 >= 0
+
+  Enter: Objective = Maximize, c1=5, c2=4
+  Constraint 1: a1=6, a2=4, type=<=, RHS=24
+  Constraint 2: a1=1, a2=2, type=<=, RHS=6
+  Result: Optimal at X1=3, X2=1.5, Z=21
+
+===============================================================================
+3. SIMPLEX METHOD
+===============================================================================
+
+WHAT IT IS
+  The Simplex Method is an algebraic algorithm for solving LPs with any number
+  of variables and constraints. It moves from vertex to vertex of the feasible
+  polytope, improving the objective at each step, until it reaches the optimum.
+  This implementation uses the standard revised simplex with tableau display and
+  includes a full Sensitivity Analysis report.
+
+WHEN TO USE IT
+  - When your LP has more than 2 variables (beyond graphical reach).
+  - When all constraints are of type <= (after adding slack variables, the
+    initial basic feasible solution is immediately available).
+  - When you need sensitivity / post-optimality analysis.
+  - Standard LPs without equality or >= constraints.
+
+SYSTEM LIMITS
+  - Variables  : up to 10 decision variables.
+  - Constraints: up to 12 constraints (all must be <= type).
+  - Coefficient range: ±1,000,000,000.
+  - Objective: Maximize or Minimize.
+  - Constraint type: ONLY <= (less-than-or-equal). For >= or =, use
+    Two-Phase or Big-M methods instead.
+
+VARIABLE NAMES AND UNITS (OPTIONAL)
+  Each variable column has optional "Name" and "Unit" fields. For example,
+  you can name X1 "Tables" with unit "units" and X2 "Chairs" with unit "units".
+  These labels appear in the final solution output for readability.
+
+HOW TO ENTER DATA
+  1. Set the number of variables (1–10) and constraints (1–12).
+  2. Click "Generate Form" (or the form updates dynamically).
+  3. Select "Maximize" or "Minimize".
+  4. For each variable (column), optionally fill in Name and Unit.
+  5. Enter objective function coefficients (one per variable).
+  6. For each constraint row, enter:
+       - Coefficients for each variable
+       - RHS value (the right-hand side constant)
+       (Constraint type is always <=; no dropdown needed.)
+  7. Click "Solve".
+
+WHAT THE RESULT DISPLAYS
+  - The initial tableau (before any pivoting).
+  - Each iteration tableau, showing:
+      * The pivot element highlighted.
+      * Entering variable and leaving variable identified.
+      * Updated tableau after the row operations.
+  - The final optimal tableau.
+  - The optimal solution: value of each variable and Z.
+  - SENSITIVITY ANALYSIS section:
+      * Ranging for objective coefficients (how much cj can change without
+        changing the optimal basis).
+      * Ranging for RHS values (bi — shadow price validity ranges).
+      * Shadow prices for each constraint.
+
+SPECIAL CASES
+  INFEASIBLE: Detected if no feasible starting point can be found. For <= only
+    problems, this usually means contradictory constraints (e.g., X1 >= 10
+    was entered incorrectly). The solver reports infeasibility.
+
+  UNBOUNDED: If the objective can grow without bound (no constraint limits it),
+    the solver detects the unbounded direction and reports it.
+
+  DEGENERACY: Occurs when a basic variable has value zero. The standard simplex
+    may cycle (infinite loop) in degenerate cases. This implementation uses
+    Bland's Rule as a tie-breaking strategy to prevent cycling.
+
+  MULTIPLE OPTIMA: If the final tableau has a non-basic variable with zero
+    reduced cost, an alternative optimal solution exists. The solver notes this
+    possibility.
+
+QUICK EXAMPLE
+  Maximize Z = 3X1 + 5X2
+  Subject to:
+    X1       <= 4
+    2X2      <= 12
+    3X1 + 5X2 <= 25
+    X1, X2 >= 0
+
+  Variables: 2, Constraints: 3
+  Objective coefficients: c1=3, c2=5
+  Constraint 1: 1, 0 <= 4
+  Constraint 2: 0, 2 <= 12
+  Constraint 3: 3, 5 <= 25
+  Result: X1=0, X2=5, Z=25 (or verify with your textbook)
+
+===============================================================================
+4. TWO-PHASE METHOD
+===============================================================================
+
+WHAT IT IS
+  The Two-Phase Method solves LPs that contain >= or = constraints (which do
+  not have an obvious initial basic feasible solution). It works in two phases:
+    Phase I : Minimize the sum of artificial variables to find a feasible
+              starting point (or prove infeasibility).
+    Phase II: Starting from the feasible point found in Phase I, optimize the
+              original objective function using standard simplex pivoting.
+  This implementation uses exact rational arithmetic (Python's Fraction class)
+  to avoid floating-point rounding errors, producing exact fraction results.
+
+WHEN TO USE IT
+  - When your LP has >= constraints (e.g., minimum production requirements).
+  - When your LP has = constraints (equality constraints).
+  - When you need exact fractional arithmetic (no rounding).
+  - When you want to see detailed tableaux for each pivot step in both phases.
+
+SYSTEM LIMITS
+  - Variables  : up to 8 decision variables.
+  - Constraints: up to 12 constraints.
+  - Constraint types: <=, >=, and = (all three accepted).
+  - Coefficient range: ±1,000,000,000.
+  - Arithmetic: exact (uses Python Fraction — results shown as fractions if
+    not whole numbers).
+  - Objective: Maximize or Minimize.
+
+HOW TO ENTER DATA
+  1. Select number of variables (1–8) and constraints (1–12).
+  2. Select "Maximize" or "Minimize".
+  3. Enter objective function coefficients.
+  4. For each constraint:
+       - Enter all variable coefficients.
+       - Select the constraint type: <=, >=, or =.
+       - Enter the RHS value.
+  5. Click "Solve".
+
+WHAT THE RESULT DISPLAYS
+  PHASE I SECTION:
+  - The augmented tableau (with artificial variables added).
+  - Every iteration tableau for Phase I pivoting.
+  - The final Phase I tableau and the minimum artificial objective value.
+  - If min = 0: feasible solution found, proceed to Phase II.
+  - If min > 0: problem is INFEASIBLE (reported immediately).
+
+  PHASE II SECTION (only if Phase I succeeded):
+  - Tableau inherited from Phase I (artificial variables removed).
+  - Every iteration tableau for Phase II pivoting.
+  - Final optimal tableau.
+  - Optimal solution: each variable value and Z (shown as exact fractions
+    if not integers).
+
+SPECIAL CASES
+  INFEASIBLE: Phase I ends with objective > 0 — artificial variables cannot
+    be driven to zero. The app reports "No feasible solution (Phase I
+    objective > 0)."
+
+  UNBOUNDED: Phase II detects unboundedness if no valid pivot row exists.
+    Reports "The problem is unbounded."
+
+  DEGENERACY: An artificial variable remains in the basis at value zero at
+    end of Phase I. The solver handles this by keeping the artificial in the
+    basis with zero value and proceeding to Phase II carefully.
+
+  EXACT ARITHMETIC NOTE: Results like X1 = 7/3 are displayed as fractions.
+    This is intentional — it shows the mathematically exact answer.
+
+QUICK EXAMPLE
+  Minimize Z = 2X1 + 3X2
+  Subject to:
+    X1 + X2  >= 4
+    X1 + 3X2 >= 6
+    X1, X2 >= 0
+
+  Variables: 2, Constraints: 2, Type: Minimize
+  Objective: 2, 3
+  Constraint 1: 1, 1, >= 4
+  Constraint 2: 1, 3, >= 6
+  Result: X1=3, X2=1, Z=9
+
+===============================================================================
+5. BIG-M METHOD
+===============================================================================
+
+WHAT IT IS
+  The Big-M Method is an alternative to the Two-Phase Method for handling >=
+  and = constraints. Instead of two phases, it adds a large penalty coefficient
+  M to artificial variables directly in the objective function. If the solution
+  drives all artificial variables to zero, the remaining solution is feasible
+  and optimal. The app uses symbolic M arithmetic (representing M as a + b*M)
+  so you can see exact symbolic values without choosing a numeric value for M.
+
+WHEN TO USE IT
+  - When your LP has >= or = constraints and you prefer a single-phase approach.
+  - When you want to see how M-penalty terms evolve across iterations.
+  - When the problem text is available as plain text (use the auto-parser).
+
+SYSTEM LIMITS
+  - Variables  : flexible (determined by your input).
+  - Constraints: up to 12 constraints.
+  - Constraint types: <=, >=, and = (all accepted).
+  - Coefficient range: ±1,000,000,000.
+  - M: treated symbolically as a + b·M (not assigned a numeric value).
+  - Objective: Maximize or Minimize.
+
+TEXT AUTO-PARSER (SPECIAL FEATURE)
+  You can paste the entire LP problem as plain text in the input area and click
+  "Parse Problem". The system will attempt to extract:
+    - The objective function and its sense (max/min).
+    - All constraints with their coefficients and types.
+    - Variable names if mentioned in the text.
+  Review and correct the extracted model before solving.
+
+HOW TO ENTER DATA
+  OPTION A — Manual Entry:
+  1. Select the number of variables and constraints.
+  2. Select Max or Min.
+  3. Enter objective coefficients.
+  4. For each constraint: coefficients, type (<=, >=, =), and RHS.
+  5. Click "Solve".
+
+  OPTION B — Text Parser:
+  1. Paste the LP problem text in the text area.
+  2. Click "Parse Problem" — the form is auto-filled.
+  3. Verify the extracted values.
+  4. Click "Solve".
+
+WHAT THE RESULT DISPLAYS
+  - The initial Big-M tableau (with artificial variables and M-coefficients
+    shown symbolically as "a + b·M").
+  - Each iteration: pivot selection, entering/leaving variable, updated tableau.
+  - The final tableau.
+  - Optimal solution: variable values and Z value (the M terms should be zero;
+    if any artificial variable is nonzero in the final basis, infeasibility
+    is reported).
+
+SPECIAL CASES
+  INFEASIBLE: An artificial variable remains basic with a nonzero value in the
+    final optimal tableau. The solver reports infeasibility.
+
+  UNBOUNDED: No valid pivot column exists for minimization / maximization step.
+
+  SYMBOLIC M DISPLAY: Tableau cells may show expressions like "3 - 2M". This
+    is intentional. The solver compares these symbolically by treating M as
+    arbitrarily large.
+
+QUICK EXAMPLE
+  Maximize Z = 2X1 + X2
+  Subject to:
+    3X1 + X2  = 9
+    X1  + X2 >= 4
+    X1,  X2 >= 0
+
+  Enter manually or paste:
+    "Maximize Z = 2x1 + x2, subject to 3x1 + x2 = 9, x1 + x2 >= 4"
+  After parsing/entering, click Solve.
+  Result: X1=2.5, X2=1.5, Z=6.5 (verify with your textbook)
+
+===============================================================================
+6. MOD METHOD (MODI — Transportation Optimality)
+===============================================================================
+
+WHAT IT IS
+  The MOD Method (also called MODI: Modified Distribution Method, or u-v Method)
+  tests whether a given feasible solution to a Transportation Problem is optimal
+  and, if not, iteratively improves it. It works by:
+    1. Computing dual multipliers u_i (for rows) and v_j (for columns) from the
+       current basic cells using the condition: u_i + v_j = c_ij.
+    2. Computing improvement indices for all non-basic cells:
+       delta_ij = c_ij - u_i - v_j.
+    3. If all delta_ij >= 0: current solution is optimal.
+    4. Otherwise: selecting the most negative delta cell as the entering cell
+       and tracing a stepping-stone cycle to reallocate shipments.
+  The process repeats until optimality.
+
+WHEN TO USE IT
+  - When you have a Transportation Problem (supply/demand matrix) and want to
+    verify or improve a feasible solution toward optimality.
+  - Typically used after Vogel's or Northwest Corner gives an initial solution.
+  - When you want to see the u-v multipliers and improvement indices at each
+    step.
+  - For balanced or unbalanced transportation problems (auto-balanced).
+
+SYSTEM LIMITS
+  - Matrix size: up to 10 sources (rows) × 10 destinations (columns).
+  - Supply and demand values: positive integers or decimals.
+  - Cost coefficients: positive integers or decimals.
+  - Auto-balancing: if total supply ≠ total demand, the app adds a dummy
+    source (row) or dummy destination (column) automatically with zero cost.
+
+HOW TO ENTER DATA
+  1. Set the number of sources (rows, m) and destinations (columns, n).
+  2. Click "Generate Table".
+  3. Fill in:
+       - Cost matrix: c[i][j] = cost to ship one unit from source i to dest j.
+       - Supply vector: s[i] = capacity of source i.
+       - Demand vector: d[j] = requirement of destination j.
+  4. Optionally enter row/column labels (source names, destination names).
+  5. The app generates an initial basic feasible solution internally (using
+     the minimum-cost or Vogel's method) if none is provided, OR you can
+     provide an initial allocation matrix directly.
+  6. Click "Solve with MODI".
+
+WHAT THE RESULT DISPLAYS
+  - The initial transportation tableau (costs and initial allocations).
+  - For each MODI iteration:
+      * The current allocation matrix.
+      * The u_i and v_j multipliers.
+      * The improvement index (delta_ij) for every non-basic cell.
+      * The entering cell (most negative delta) and the stepping-stone cycle.
+      * The updated allocation after reallocation.
+  - The final optimal allocation matrix.
+  - Total minimum transportation cost.
+
+SPECIAL CASES
+  UNBALANCED PROBLEM: Total supply ≠ total demand. A dummy row or column is
+    added automatically with zero unit costs. The optimal allocation will show
+    shipments to/from the dummy (representing unused capacity or unmet demand).
+
+  DEGENERACY: Number of basic cells < m + n - 1. The solver adds an epsilon
+    allocation (a very small positive amount, epsilon) to a non-basic cell to
+    maintain a non-degenerate basis. The app notes when epsilon is used.
+
+  MULTIPLE OPTIMA: Some improvement indices are zero in the final tableau.
+    The current solution is optimal but alternative optima may exist.
+
+QUICK EXAMPLE
+  2 Sources, 3 Destinations
+  Costs:
+        D1  D2  D3
+    S1 [ 2   3   1 ]
+    S2 [ 5   4   8 ]
+  Supply: S1=120, S2=80
+  Demand: D1=150, D2=70, D3=... (auto-balanced if needed)
+
+  Enter the 2×3 cost matrix, supplies, and demands, then click Solve.
+  The app shows MODI iterations until the optimal allocation is found.
+
+===============================================================================
+7. VOGEL'S METHOD (Transportation Initial Feasible Solution)
+===============================================================================
+
+WHAT IT IS
+  Vogel's Approximation Method (VAM) finds a good initial feasible solution
+  for Transportation Problems by using penalty-based allocation. At each step:
+    1. Compute the row penalty = difference between the two smallest costs in
+       that row. Compute the column penalty similarly.
+    2. Select the row or column with the LARGEST penalty.
+    3. Allocate as much as possible to the minimum-cost cell in that row/column.
+    4. Eliminate the satisfied row or column and repeat.
+  Vogel's often produces solutions very close to optimal (sometimes optimal
+  itself), making it the preferred starting point before applying MODI.
+  After finding the initial solution, the app also runs a u-v optimality check
+  to tell you whether the Vogel solution is already optimal.
+
+WHEN TO USE IT
+  - To get a high-quality initial feasible solution for a transportation problem.
+  - As the first step before applying the MODI method.
+  - When the Northwest Corner method gives a poor starting solution.
+  - For balanced or unbalanced problems.
+
+SYSTEM LIMITS
+  - Matrix size: up to 10 × 10 (sources × destinations).
+  - Supply and demand: positive integers or decimals.
+  - Cost coefficients: positive integers or decimals.
+  - Auto-balancing: adds a dummy row/column if supply ≠ demand.
+
+HOW TO ENTER DATA
+  1. Enter the number of sources (m) and destinations (n).
+  2. Click "Generate Table".
+  3. Fill in:
+       - Cost matrix c[i][j].
+       - Supply values s[i].
+       - Demand values d[j].
+  4. Optionally name each source and destination.
+  5. Click "Solve with Vogel".
+
+WHAT THE RESULT DISPLAYS
+  - The original cost/supply/demand tableau.
+  - STEP-BY-STEP VOGEL ALLOCATION:
+      * Row and column penalties at each iteration.
+      * The selected row/column and the allocated cell highlighted.
+      * Remaining supply/demand after each allocation.
+  - The complete initial feasible solution (allocation matrix).
+  - Total cost of the Vogel initial solution.
+  - U-V OPTIMALITY CHECK:
+      * Improvement indices (delta_ij) for all non-basic cells.
+      * If all delta_ij >= 0: "The Vogel solution is OPTIMAL."
+      * If some delta_ij < 0: "Solution is not yet optimal — apply MODI."
+
+SPECIAL CASES
+  UNBALANCED: Same as MODI — a dummy row or column is added automatically.
+
+  DEGENERACY: If the number of basic cells after Vogel < m + n - 1, an epsilon
+    value is placed in a strategically chosen non-basic cell.
+
+  TIE-BREAKING: When two rows/columns have equal maximum penalties, the app
+    selects the one with the lower minimum cost. Ties in cell cost are broken
+    by selecting the cell with the smallest index.
+
+  ALREADY OPTIMAL: Vogel's solution may already be optimal. The u-v check will
+    confirm this, saving you the effort of running MODI.
+
+QUICK EXAMPLE
+  3 Sources, 4 Destinations
+  Costs:
+         D1  D2  D3  D4
+    S1 [  2   3   1   7 ]
+    S2 [  6   4   3   2 ]
+    S3 [  8   7   4   5 ]
+  Supply: S1=120, S2=80, S3=80
+  Demand: D1=150, D2=70, D3=60, D4=...
+
+  Enter cost matrix, supply, demand. Click Solve.
+  The app walks through each penalty round and shows the final allocation.
+
+===============================================================================
+8. SIMPLEX REGRESSION (MINIMAX / CHEBYSHEV LINEAR REGRESSION)
+===============================================================================
+
+WHAT IT IS
+  Standard (Least Squares) regression minimizes the SUM of squared errors.
+  Chebyshev (Minimax) regression minimizes the MAXIMUM absolute error across
+  all data points — this is an L-infinity norm criterion. The result is a line
+    y = a + bx
+  such that the maximum deviation |y_i - (a + b*x_i)| is as small as possible.
+  This guarantees the fitted line stays within a uniform band around all points.
+  The problem is formulated as an LP and solved using the Two-Phase simplex
+  method with full tableau display.
+
+WHEN TO USE IT
+  - When you want a regression line that is uniformly close to ALL data points
+    (no single point is a large outlier).
+  - In engineering and operations research when worst-case error matters more
+    than average error.
+  - When you want to see how regression can be cast as a linear program.
+  - As a learning tool connecting LP with statistical fitting.
+
+SYSTEM LIMITS
+  - Data points: minimum 3, maximum 12 (x, y) pairs.
+  - Values: any real numbers (integers, decimals).
+  - Output: intercept (a), slope (b), and maximum error (e*).
+  - Method: Two-Phase simplex with exact fraction arithmetic.
+
+HOW TO ENTER DATA
+  1. Set the number of data points (3–12).
+  2. Click "Generate Table".
+  3. For each point, enter:
+       - x value (independent variable)
+       - y value (dependent / observed value)
+  4. Click "Solve".
+
+  DATA FORMAT TIPS:
+  - x values should be distinct (avoid duplicate x values — the system works
+    with them but results may be trivially exact).
+  - Very large differences in scale (e.g., x in millions, y near zero) may
+    cause numerical sensitivity; consider normalizing your data.
+
+WHAT THE RESULT DISPLAYS
+  - The LP formulation used: objective, decision variables (a, b, e, plus
+    auxiliary variables), and all constraints derived from your data.
+  - PHASE I TABLEAUX: complete step-by-step simplex tables for Phase I.
+  - PHASE II TABLEAUX: complete step-by-step simplex tables for Phase II.
+  - OPTIMAL SOLUTION:
+      * Intercept (a): the constant term of the fitted line.
+      * Slope (b): the coefficient of x in the fitted line.
+      * Maximum absolute error (e*): the minimax deviation.
+  - FITTED LINE EQUATION: y = a + b·x
+  - TABLE OF RESIDUALS: for each data point, the actual y, the fitted y,
+    and the absolute error |y - ŷ|. All errors should be <= e*.
+  - Optionally: a plot of the data points and the fitted line with the
+    uniform error band y ± e* shown.
+
+SPECIAL CASES
+  PERFECT FIT: If 2 or more collinear points are entered, e* = 0 (the line
+    passes through all points exactly). With exactly 2 points and no other
+    data, the solution is trivially exact.
+
+  MULTIPLE OPTIMA: Several lines may achieve the same minimax error. The LP
+    solver returns one optimal basis; alternative optima are possible.
+
+  DEGENERATE DATA: All x values identical — the problem becomes infeasible or
+    trivial (vertical line, not a function). Enter at least 2 distinct x values.
+
+  NEGATIVE SLOPE: Perfectly valid. The solver handles negative slopes naturally
+    since b is modeled as an unrestricted variable (split into b+ - b-).
+
+QUICK EXAMPLE
+  Data points: (1, 2), (2, 3), (3, 5), (4, 4)
+  Enter n=4 points:
+    x1=1, y1=2
+    x2=2, y2=3
+    x3=3, y3=5
+    x4=4, y4=4
+  Click Solve.
+  Result: fitted line y = a + b·x with minimum maximum error e*.
+  All residuals |yi - (a + b·xi)| will be <= e*.
+
+===============================================================================
+9. GENERAL TIPS & TROUBLESHOOTING
+===============================================================================
+
+COMMON MISTAKES
+  1. WRONG METHOD FOR CONSTRAINT TYPE
+     - Use Simplex ONLY for all-<= problems.
+     - Use Two-Phase or Big-M when you have >= or = constraints.
+     - Graphical only works for exactly 2 variables.
+
+  2. INFEASIBILITY YOU DIDN'T EXPECT
+     - Check that your RHS values are non-negative (or that constraints
+       are written in the standard direction).
+     - Verify that >= constraints have RHS >= 0.
+     - Contradictory constraints (e.g., X1 >= 5 AND X1 <= 3) will always
+       produce an infeasible result.
+
+  3. TRANSPORTATION PROBLEM NOT BALANCING
+     - Check that your supply and demand totals are what you intend.
+     - The app adds a dummy automatically, but verify the dummy cost is 0.
+
+  4. FRACTION RESULTS LOOK STRANGE
+     - The Two-Phase and Simplex Regression solvers use exact arithmetic.
+       A result like X1 = 7/3 is correct. Convert to decimal if needed:
+       7/3 ≈ 2.333...
+
+  5. TEXT PARSER MISREADS THE PROBLEM
+     - The parser handles common textbook formats but may fail on unusual
+       notation. Always review the auto-filled form before clicking Solve.
+     - Ensure your text uses standard variable names (x1, x2, etc.) or
+       common aliases (X1, X2, x_1, x_2).
+
+UNDERSTANDING THE TABLEAU DISPLAY
+  - Each tableau row corresponds to a basic variable.
+  - The bottom row (Z-row or objective row) shows reduced costs.
+  - A negative reduced cost (for maximization) means the variable can
+    improve the objective — it is the entering variable.
+  - The minimum positive ratio test selects the leaving variable (pivot row).
+  - The pivot element is the intersection of the entering column and pivot row.
+
+SENSITIVITY ANALYSIS (Simplex Method only)
+  - Objective ranging: how much can cj change before the optimal BASIS changes?
+    (The optimal Z may change, but the same variables stay basic.)
+  - RHS ranging: how much can bi change before the shadow price changes?
+    (Shadow price = how much Z improves per unit increase in bi.)
+  - Shadow prices of zero indicate non-binding constraints.
+
+TRANSPORTATION — DEGENERACY RULE
+  A feasible solution to an m×n transportation problem must have exactly
+  m + n - 1 basic (allocated) cells. If you have fewer, it is degenerate.
+  The solver adds epsilon to restore the count. This is standard practice.
+
+PERFORMANCE NOTES
+  - For large problems (10 variables, 12 constraints), the solver may display
+    many tableau iterations. Scroll down to see the final solution.
+  - Exact fraction arithmetic (Two-Phase, Simplex Regression) is slower than
+    floating-point but more accurate for educational purposes.
+
+RECOMMENDED WORKFLOW FOR TRANSPORTATION PROBLEMS
+  Step 1: Use Vogel's Method to get a good initial feasible solution.
+  Step 2: Check the u-v optimality output — if already optimal, you're done.
+  Step 3: If not optimal, use the MOD (MODI) Method starting from Vogel's
+          allocation to reach the optimum in fewer iterations.
+
+GETTING HELP
+  - Each method page has a brief description and usage guide at the top.
+  - Hover over field labels for tooltips (where available).
+  - If a result seems wrong, trace through the first tableau manually to
+    verify that you entered the problem correctly.
+
+===============================================================================
+METHOD SELECTION QUICK REFERENCE
+===============================================================================
+
+  Problem Type                    | Recommended Method
+  --------------------------------|-------------------------------
+  2 variables, all <=             | Graphical Method
+  Many variables, all <=          | Simplex Method
+  Has >= or = constraints         | Two-Phase Method
+  Has >= or = (single-phase)      | Big-M Method
+  Transportation (find optimum)   | MOD / MODI Method
+  Transportation (initial soln)   | Vogel's Method
+  Minimax linear regression       | Simplex Regression
+
+===============================================================================
+CONSTRAINT TYPE COMPATIBILITY
+===============================================================================
+
+  Method              | <=  | >=  | =
+  --------------------|-----|-----|-----
+  Graphical           | YES | YES | NO
+  Simplex             | YES | NO  | NO
+  Two-Phase           | YES | YES | YES
+  Big-M               | YES | YES | YES
+  MOD (MODI)          | N/A (transportation matrix)
+  Vogel's             | N/A (transportation matrix)
+  Simplex Regression  | N/A (LP generated internally)
+
+===============================================================================
+SIZE LIMITS SUMMARY
+===============================================================================
+
+  Method              | Max Variables | Max Constraints | Special Limits
+  --------------------|---------------|-----------------|------------------
+  Graphical           | 2 (fixed)     | 12              | —
+  Simplex             | 10            | 12              | Only <= allowed
+  Two-Phase           | 8             | 12              | <=, >=, = OK
+  Big-M               | flexible      | 12              | <=, >=, = OK
+  MOD (MODI)          | —             | —               | 10×10 matrix max
+  Vogel's             | —             | —               | 10×10 matrix max
+  Simplex Regression  | —             | —               | 3–12 data points
+
+===============================================================================
+                        END OF USER MANUAL
+         Operations Research Web Solver | Flask Application
+===============================================================================

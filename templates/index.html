@@ -259,6 +259,44 @@
             transition:color .3s;cursor:default;
         }
         .easter-egg:hover{color:#94a3b8}
+
+        /* ── help button ── */
+        .help-fab{
+            position:fixed;bottom:20px;right:64px;
+            z-index:20;
+            display:flex;flex-direction:column;align-items:flex-end;gap:8px;
+        }
+        .help-fab-btn{
+            width:44px;height:44px;border-radius:50%;
+            background:linear-gradient(135deg,#1e3a5f,#0f2942);
+            border:1.5px solid rgba(201,151,0,.35);
+            color:#fbbf24;font-size:1.25rem;font-weight:700;
+            display:grid;place-items:center;
+            cursor:pointer;text-decoration:none;
+            box-shadow:0 4px 20px rgba(0,0,0,.18);
+            transition:all .3s cubic-bezier(.16,1,.3,1);
+        }
+        .help-fab-btn:hover{
+            transform:scale(1.12);
+            box-shadow:0 8px 28px rgba(201,151,0,.25);
+            border-color:rgba(201,151,0,.7);
+        }
+        .help-menu{
+            display:none;flex-direction:column;gap:6px;
+            background:#fff;border:1px solid #e2e8f0;
+            border-radius:14px;padding:10px;
+            box-shadow:0 8px 32px rgba(0,0,0,.12);
+            min-width:160px;
+        }
+        .help-menu.open{display:flex}
+        .help-menu a{
+            display:flex;align-items:center;gap:8px;
+            padding:8px 12px;border-radius:9px;text-decoration:none;
+            font-size:.82rem;font-weight:600;color:#374151;
+            transition:background .18s;
+        }
+        .help-menu a:hover{background:#f1f5f9;color:#d97706}
+        .help-menu .lang-flag{font-size:1rem}
     </style>
 </head>
 <body>
@@ -377,6 +415,15 @@
 
 <span class="easter-egg" title="↑↑↓↓←→←→BA">⌘</span>
 
+<!-- ── Help / Manual button ── -->
+<div class="help-fab" id="helpFab">
+    <div class="help-menu" id="helpMenu">
+        <a href="/manual/es"><span class="lang-flag">🇪🇸</span> Manual en Español</a>
+        <a href="/manual/en"><span class="lang-flag">🇬🇧</span> User Manual (EN)</a>
+    </div>
+    <button class="help-fab-btn" id="helpBtn" title="Manual de usuario / User Manual" aria-label="Abrir manual de usuario">?</button>
+</div>
+
 <script>
 /* ─── Minimal particle field ─── */
 (function(){
@@ -424,6 +471,21 @@
     }
     addEventListener('resize',resize);
     resize();draw();
+})();
+
+/* ── Help FAB ── */
+(function(){
+    const btn = document.getElementById('helpBtn');
+    const menu = document.getElementById('helpMenu');
+    if(!btn || !menu) return;
+    btn.addEventListener('click', function(e){
+        e.stopPropagation();
+        menu.classList.toggle('open');
+    });
+    document.addEventListener('click', function(){
+        menu.classList.remove('open');
+    });
+    menu.addEventListener('click', function(e){ e.stopPropagation(); });
 })();
 </script>
 </body>

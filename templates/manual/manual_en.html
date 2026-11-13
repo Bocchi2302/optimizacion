@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Manual · OptiLab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --gold:#d97706;--gold-light:#fbbf24;--bg:#ffffff;--surface:#f8fafc;
+      --border:#e2e8f0;--text:#1a1a2e;--muted:#64748b;--code-bg:#f1f5f9;
+    }
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+    .topbar{
+      position:sticky;top:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px clamp(16px,4vw,48px);
+      background:rgba(255,255,255,.92);backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);
+      font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem}
+    .topbar .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e88}
+    .topbar .lang-pill{display:flex;gap:6px;align-items:center;font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+    .topbar .lang-pill a{padding:4px 10px;border-radius:12px;text-decoration:none;color:var(--muted);border:1px solid var(--border);transition:all .2s}
+    .topbar .lang-pill a.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+    .topbar .lang-pill a:not(.active):hover{border-color:var(--gold);color:var(--gold)}
+    .back-btn{display:flex;align-items:center;gap:6px;text-decoration:none;font-size:.82rem;font-weight:500;color:var(--muted);padding:5px 12px;border-radius:10px;border:1px solid var(--border);transition:all .2s}
+    .back-btn:hover{color:var(--gold);border-color:var(--gold)}
+    .layout{display:flex;min-height:calc(100vh - 57px)}
+    .sidebar{width:260px;flex-shrink:0;position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;padding:28px 20px;border-right:1px solid var(--border);background:var(--surface)}
+    .sidebar h4{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px}
+    .sidebar nav{display:flex;flex-direction:column;gap:4px}
+    .sidebar nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;text-decoration:none;font-size:.855rem;font-weight:500;color:var(--muted);transition:all .18s}
+    .sidebar nav a .icon{font-size:1.1rem;width:22px;text-align:center;flex-shrink:0}
+    .sidebar nav a:hover{background:rgba(0,0,0,.04);color:var(--text)}
+    .sidebar nav a.active{background:linear-gradient(135deg,rgba(217,119,6,.12),rgba(251,191,36,.08));color:var(--gold)}
+    .main{flex:1;padding:40px clamp(20px,5vw,72px);max-width:860px}
+    .hero-manual{margin-bottom:48px;padding-bottom:28px;border-bottom:1px solid var(--border)}
+    .hero-manual .badge{display:inline-flex;align-items:center;gap:6px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);padding:4px 12px;border-radius:20px;margin-bottom:14px}
+    .hero-manual h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:10px}
+    .hero-manual p{color:var(--muted);font-size:1rem;max-width:560px}
+    .section{margin-bottom:60px;scroll-margin-top:76px}
+    .section-header{display:flex;align-items:center;gap:14px;margin-bottom:28px;padding-bottom:14px;border-bottom:2px solid var(--border)}
+    .section-icon{width:46px;height:46px;border-radius:14px;background:linear-gradient(135deg,#1e3a5f,#0f2942);display:grid;place-items:center;font-size:1.3rem;flex-shrink:0}
+    .section-header h2{font-family:'Space Grotesk',sans-serif;font-size:1.45rem;font-weight:700;letter-spacing:-.02em}
+    .section-num{font-size:.8rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}
+    .sub{margin-bottom:24px}
+    .sub h3{font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .sub h3::before{content:'';display:inline-block;width:3px;height:14px;background:var(--gold);border-radius:2px}
+    .sub p,.sub li{font-size:.93rem;color:#374151;line-height:1.75}
+    .sub ul,.sub ol{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+    .limits-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+    .limit-card{padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface)}
+    .limit-card .lc-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px}
+    .limit-card .lc-val{font-size:1rem;font-weight:600;color:var(--text)}
+    .steps{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .step{display:flex;gap:14px;align-items:flex-start}
+    .step-num{width:26px;height:26px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(--gold),var(--gold-light));color:#fff;font-size:.78rem;font-weight:700;display:grid;place-items:center;margin-top:2px}
+    .step p{font-size:.92rem;color:#374151;line-height:1.65}
+    .cases{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .case-card{padding:12px 16px;border-radius:10px;border-left:3px solid;background:var(--surface)}
+    .case-card.infeasible{border-color:#ef4444}
+    .case-card.unbounded{border-color:#f59e0b}
+    .case-card.multiple{border-color:#3b82f6}
+    .case-card.degenerate{border-color:#8b5cf6}
+    .case-card strong{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+    .case-card.infeasible strong{color:#dc2626}
+    .case-card.unbounded strong{color:#d97706}
+    .case-card.multiple strong{color:#2563eb}
+    .case-card.degenerate strong{color:#7c3aed}
+    .case-card p{font-size:.88rem;color:#4b5563;line-height:1.6}
+    .example-box{margin-top:12px;padding:18px 20px;border-radius:12px;background:linear-gradient(135deg,rgba(217,119,6,.04),rgba(251,191,36,.03));border:1px solid rgba(217,119,6,.15)}
+    .example-box pre{font-family:'JetBrains Mono','Fira Code','Courier New',monospace;font-size:.82rem;line-height:1.75;color:#374151;white-space:pre-wrap}
+    .example-box .ex-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:10px}
+    .cmp-table{width:100%;border-collapse:collapse;font-size:.86rem;margin-top:12px}
+    .cmp-table th{background:#1e3a5f;color:#fff;padding:9px 14px;text-align:left;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+    .cmp-table td{padding:9px 14px;border-bottom:1px solid var(--border)}
+    .cmp-table tr:nth-child(even) td{background:var(--surface)}
+    .yes{color:#166534;font-weight:700}.no{color:#991b1b;font-weight:700}.na{color:var(--muted)}
+    .glossary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .gl-item{padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border)}
+    .gl-item dt{font-size:.78rem;font-weight:700;color:var(--gold);font-family:'Space Grotesk',sans-serif;margin-bottom:2px}
+    .gl-item dd{font-size:.82rem;color:#4b5563;line-height:1.55}
+    .sidebar::-webkit-scrollbar{width:4px}
+    .sidebar::-webkit-scrollbar-track{background:transparent}
+    .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    @media(max-width:768px){.sidebar{display:none}.limits-grid{grid-template-columns:1fr}.glossary{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="{{ url_for('index') }}" class="back-btn">← Home</a>
+    <a href="#" class="brand"><span class="dot"></span> OptiLab</a>
+  </div>
+  <div class="lang-pill">
+    <a href="{{ url_for('manual_bp.manual_es') }}">ES</a>
+    <a href="{{ url_for('manual_bp.manual_en') }}" class="active">EN</a>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <h4>Contents</h4>
+    <nav>
+      <a href="#graphical" class="active"><span class="icon">📈</span>Graphical Method</a>
+      <a href="#simplex"><span class="icon">🧮</span>Simplex Method</a>
+      <a href="#two-phase"><span class="icon">⚖️</span>Two-Phase Method</a>
+      <a href="#big-m"><span class="icon">Ⓜ️</span>Big-M Method</a>
+      <a href="#modi"><span class="icon">🔄</span>MOD / MODI</a>
+      <a href="#vogel"><span class="icon">🚚</span>Vogel's Method</a>
+      <a href="#regression"><span class="icon">📉</span>Minimax Regression</a>
+      <a href="#reference"><span class="icon">📋</span>Reference Tables</a>
+    </nav>
+  </aside>
+
+  <main class="main">
+
+    <div class="hero-manual">
+      <div class="badge">📘 User Manual</div>
+      <h1>OptiLab User Guide</h1>
+      <p>Complete reference for all 7 optimization methods — Operations Research · Flask · USTA 2025</p>
+    </div>
+
+    <!-- ══ 1. GRAPHICAL METHOD ══ -->
+    <section class="section" id="graphical">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div><div class="section-num">Section 1</div><h2>Graphical Method</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p>Solves Linear Programs (LPs) with <strong>exactly 2 decision variables</strong> (X1, X2) by plotting constraints as lines on a 2-D plane, identifying the feasible region, and evaluating the objective at each corner point. Includes an <strong>automatic text extractor</strong>: paste a textbook problem and the system fills the form for you.</p>
+      </div>
+
+      <div class="sub">
+        <h3>When to use it</h3>
+        <ul>
+          <li>Your LP has <strong>exactly 2</strong> decision variables.</li>
+          <li>You want a visual, geometric understanding of the solution.</li>
+          <li>As a teaching tool — before moving to multi-variable Simplex.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>System limits</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Variables</div><div class="lc-val">Exactly 2 (X1, X2)</div></div>
+          <div class="limit-card"><div class="lc-label">Constraints</div><div class="lc-val">Up to 12</div></div>
+          <div class="limit-card"><div class="lc-label">Types</div><div class="lc-val">≤, ≥ or =</div></div>
+          <div class="limit-card"><div class="lc-label">Coefficient range</div><div class="lc-val">−10⁹ to +10⁹</div></div>
+        </div>
+        <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">Accepted formats: <code>3</code> · <code>3.5</code> · <code>1/3</code> · <code>-2/5</code></p>
+      </div>
+
+      <div class="sub">
+        <h3>How to enter data</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Select <strong>Maximize</strong> or <strong>Minimize</strong>.</p></div>
+          <div class="step"><div class="step-num">2</div><p>Enter coefficients C1 and C2 for Z = C1·X1 + C2·X2.</p></div>
+          <div class="step"><div class="step-num">3</div><p>For each constraint: coefficient of X1, coefficient of X2, operator (≤/≥/=), and right-hand side (RHS).</p></div>
+          <div class="step"><div class="step-num">4</div><p>Click <strong>Solve</strong>. <em>Alternative:</em> paste the problem text in the extractor → click <strong>Extract</strong> → review → <strong>Solve</strong>.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>What the result displays</h3>
+        <ul>
+          <li>Interactive 2-D graph: constraint lines, shaded feasible region, labeled vertices, highlighted optimum.</li>
+          <li>Table of all corner points with their Z values.</li>
+          <li>Optimal coordinates (X1*, X2*) and Z*.</li>
+          <li>Iso-profit/iso-cost line showing the direction of improvement.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Special cases</h3>
+        <div class="cases">
+          <div class="case-card infeasible"><strong>Infeasible</strong><p>Feasible region is empty (contradictory constraints). No shaded area on the graph.</p></div>
+          <div class="case-card unbounded"><strong>Unbounded</strong><p>Feasible region extends to infinity in the optimization direction. App reports "Problem is unbounded."</p></div>
+          <div class="case-card multiple"><strong>Multiple optima</strong><p>Objective line is parallel to an active constraint. App shows both extreme points of the optimal edge.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>Maximize  Z = 5X1 + 4X2
+Subject to:
+  6X1 + 4X2 ≤ 24
+   X1 + 2X2 ≤ 6
+  X1, X2 ≥ 0
+
+➜ C1=5, C2=4 · R1: 6, 4, ≤, 24 · R2: 1, 2, ≤, 6
+✔ Expected result: Z* = 21  at  (3, 1.5)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 2. SIMPLEX ══ -->
+    <section class="section" id="simplex">
+      <div class="section-header">
+        <div class="section-icon">🧮</div>
+        <div><div class="section-num">Section 2</div><h2>Simplex Method</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p>The Simplex Algorithm moves through vertices of the feasible polytope, improving the objective at each pivot, until reaching the optimum. This implementation uses exact rational arithmetic and provides a full <strong>Sensitivity Analysis</strong> report. Variables can have optional names and units for readable output.</p>
+      </div>
+
+      <div class="sub">
+        <h3>When to use it</h3>
+        <ul>
+          <li>Your LP has <strong>more than 2 variables</strong>.</li>
+          <li><strong>All constraints are ≤</strong> (less-than-or-equal).</li>
+          <li>You need sensitivity / post-optimality analysis.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>System limits</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Variables</div><div class="lc-val">Up to 10</div></div>
+          <div class="limit-card"><div class="lc-label">Constraints</div><div class="lc-val">Up to 12</div></div>
+          <div class="limit-card"><div class="lc-label">Types</div><div class="lc-val">≤ ONLY</div></div>
+          <div class="limit-card"><div class="lc-label">Anti-cycling</div><div class="lc-val">Bland's Rule (after 50 iters)</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>How to enter data</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Select Maximize / Minimize and set the number of variables (1–10) and constraints (1–12).</p></div>
+          <div class="step"><div class="step-num">2</div><p><em>(Optional)</em> Assign a name and unit to each variable.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Enter objective function coefficients.</p></div>
+          <div class="step"><div class="step-num">4</div><p>For each constraint: enter coefficients and RHS value (all ≤).</p></div>
+          <div class="step"><div class="step-num">5</div><p>Click <strong>Solve</strong>.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>What the result displays</h3>
+        <ul>
+          <li>Initial tableau and each iteration tableau with pivot highlighted.</li>
+          <li>Entering and leaving variable per iteration.</li>
+          <li>Optimal solution: each variable value and Z*.</li>
+          <li><strong>Sensitivity Analysis:</strong> optimality ranges for Cj, feasibility ranges for bi, shadow prices.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Special cases</h3>
+        <div class="cases">
+          <div class="case-card infeasible"><strong>Infeasible</strong><p>Detected if no feasible starting point exists (e.g., negative RHS). Rare with ≤-only problems.</p></div>
+          <div class="case-card unbounded"><strong>Unbounded</strong><p>No valid pivot row in some iteration. Solver reports unboundedness.</p></div>
+          <div class="case-card degenerate"><strong>Degeneracy</strong><p>Basic variable with value 0. Bland's Rule prevents cycling automatically.</p></div>
+          <div class="case-card multiple"><strong>Multiple optima</strong><p>Non-basic variable with zero reduced cost in the final tableau.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>Maximize  Z = 3X1 + 5X2
+Subject to:
+  X1       ≤ 4
+  2X2      ≤ 12
+  3X1+5X2  ≤ 25
+
+➜ Variables: 2 · Constraints: 3
+✔ Expected: X1=0, X2=5, Z=25</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 3. TWO-PHASE ══ -->
+    <section class="section" id="two-phase">
+      <div class="section-header">
+        <div class="section-icon">⚖️</div>
+        <div><div class="section-num">Section 3</div><h2>Two-Phase Method</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p>Handles LPs with ≥ or = constraints by running two simplex passes. <strong>Phase I:</strong> minimize the sum of artificial variables to find a basic feasible solution. <strong>Phase II:</strong> optimize the original objective from that BFS. Uses <strong>exact rational arithmetic</strong> (Python's Fraction) — results shown as exact fractions.</p>
+      </div>
+
+      <div class="sub">
+        <h3>When to use it</h3>
+        <ul>
+          <li>Your LP has <strong>≥ or = constraints</strong>.</li>
+          <li>You need <strong>exact fractional results</strong> (no floating-point rounding).</li>
+          <li>You want complete tableau detail for both phases.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>System limits</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Variables</div><div class="lc-val">Up to 8</div></div>
+          <div class="limit-card"><div class="lc-label">Constraints</div><div class="lc-val">Up to 12</div></div>
+          <div class="limit-card"><div class="lc-label">Types</div><div class="lc-val">≤, ≥ and = (any mix)</div></div>
+          <div class="limit-card"><div class="lc-label">Arithmetic</div><div class="lc-val">Exact (Fraction class)</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>How to enter data</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Select objective and set variables (1–8) / constraints (1–12).</p></div>
+          <div class="step"><div class="step-num">2</div><p>Enter objective function coefficients.</p></div>
+          <div class="step"><div class="step-num">3</div><p>For each constraint: coefficients, type (≤, ≥ or =), and RHS.</p></div>
+          <div class="step"><div class="step-num">4</div><p>Click <strong>Solve</strong>.</p></div>
+        </div>
+        <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">Fractions accepted in any field: <code>3/4</code>, <code>-1/2</code></p>
+      </div>
+
+      <div class="sub">
+        <h3>Special cases</h3>
+        <div class="cases">
+          <div class="case-card infeasible"><strong>Infeasible</strong><p>Phase I ends with an artificial variable &gt; 0 in basis. App reports "No feasible solution."</p></div>
+          <div class="case-card degenerate"><strong>Artificial at zero in basis</strong><p>Degeneracy at end of Phase I. Solver handles it automatically before Phase II.</p></div>
+          <div class="case-card unbounded"><strong>Unbounded</strong><p>Detected in Phase II the same way as standard Simplex.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>Minimize  Z = 2X1 + 3X2
+Subject to:
+  X1 + X2  ≥ 4
+  X1 + 3X2 = 6
+  X1, X2 ≥ 0
+
+➜ Variables: 2 · Constraints: 2 (one ≥, one =)
+✔ Expected: Z* = 7  at  (3, 1)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 4. BIG-M ══ -->
+    <section class="section" id="big-m">
+      <div class="section-header">
+        <div class="section-icon">Ⓜ️</div>
+        <div><div class="section-num">Section 4</div><h2>Big-M Method</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p>Alternative to Two-Phase: adds a large penalty coefficient M to artificial variables directly in the objective function. The app uses <strong>symbolic M</strong> (shown as <code>a + b·M</code>) so tableau entries are exact. Includes a <strong>plain-text auto-parser</strong> for problem input.</p>
+      </div>
+
+      <div class="sub">
+        <h3>How to enter data</h3>
+        <p><strong>Option A — Manual form:</strong> same as Two-Phase.</p>
+        <p style="margin-top:8px"><strong>Option B — Text parser:</strong></p>
+        <div class="example-box" style="margin-top:8px">
+          <pre>Max Z = 3x1 + 5x2
+s.t.
+x1 + x2 &lt;= 4
+x1 + 3x2 &gt;= 6
+x1, x2 &gt;= 0</pre>
+        </div>
+        <p style="margin-top:8px;font-size:.85rem;color:var(--muted)">Recognized keywords: <code>Max</code>, <code>Min</code>, <code>Maximize</code>, <code>Minimize</code>, <code>s.t.</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>=</code>.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>Maximize  Z = 3X1 + 2X2
+Subject to:
+  X1 + X2 = 4
+  X1      ≥ 1
+  X2      ≥ 1
+
+✔ Expected: Z* = 11  at  (3, 1)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 5. MODI ══ -->
+    <section class="section" id="modi">
+      <div class="section-header">
+        <div class="section-icon">🔄</div>
+        <div><div class="section-num">Section 5</div><h2>MOD / MODI Method (Transportation)</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p>The <strong>Modified Distribution Method (MODI)</strong> optimizes Transportation Problems. It computes dual multipliers u_i and v_j, evaluates improvement indices δ_ij = c_ij − u_i − v_j for non-basic cells, and traces stepping-stone cycles when δ_ij &lt; 0. Includes <strong>automatic balancing</strong>.</p>
+      </div>
+
+      <div class="sub">
+        <h3>System limits</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Max matrix size</div><div class="lc-val">10 sources × 10 destinations</div></div>
+          <div class="limit-card"><div class="lc-label">Balancing</div><div class="lc-val">Automatic (dummy row/column)</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>How to enter data</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Set the number of sources (m) and destinations (n).</p></div>
+          <div class="step"><div class="step-num">2</div><p>Enter supply vector and demand vector.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Fill in the cost matrix C (m × n).</p></div>
+          <div class="step"><div class="step-num">4</div><p>Click <strong>Solve</strong>.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Special cases</h3>
+        <div class="cases">
+          <div class="case-card degenerate"><strong>Degeneracy</strong><p>Basic cells &lt; m+n−1. Solver adds an ε allocation to restore a non-degenerate basis.</p></div>
+          <div class="case-card multiple"><strong>Multiple optima</strong><p>Some δ_ij = 0 in final tableau. Alternative optimal plans exist at the same cost.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>2 Sources, 3 Destinations
+Costs:
+       D1  D2  D3
+  S1 [  2   3   1 ]
+  S2 [  5   4   8 ]
+Supply: [30, 40]  |  Demand: [20, 30, 20]
+(Balanced: Σsupply = 70 = Σdemand)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 6. VOGEL ══ -->
+    <section class="section" id="vogel">
+      <div class="section-header">
+        <div class="section-icon">🚚</div>
+        <div><div class="section-num">Section 6</div><h2>Vogel's Method (Transportation)</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p>Vogel's Approximation Method (VAM) finds a high-quality <strong>Initial Basic Feasible Solution (IBFS)</strong> for Transportation Problems using penalty-based allocation. At each step, it allocates to the cheapest cell in the row/column with the largest penalty. The app also runs a <strong>u-v optimality check</strong> after completing the IBFS.</p>
+      </div>
+
+      <div class="sub">
+        <h3>When to use it</h3>
+        <ul>
+          <li>To get a good starting solution before applying MODI.</li>
+          <li>When Northwest Corner gives a poor initial solution.</li>
+          <li>The u-v check may confirm the Vogel solution is already optimal.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>System limits</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Max matrix size</div><div class="lc-val">10 × 10</div></div>
+          <div class="limit-card"><div class="lc-label">u-v optimality check</div><div class="lc-val">Included automatically</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>What the result displays</h3>
+        <ul>
+          <li>Row and column penalties at each iteration.</li>
+          <li>Allocation made per step (cell chosen, quantity assigned).</li>
+          <li>Final IBFS allocation matrix and total cost.</li>
+          <li><strong>u-v check:</strong> if all δ_ij ≥ 0 → "Vogel solution is OPTIMAL"; otherwise → "Apply MODI."</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>2 Sources, 3 Destinations
+Costs:
+       D1  D2  D3
+  S1 [  2   3   1 ]
+  S2 [  5   4   8 ]
+Supply: [30, 40]  |  Demand: [20, 30, 20]
+
+Penalty col D3 = 8−1 = 7  → First allocation: S1→D3</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ 7. REGRESSION ══ -->
+    <section class="section" id="regression">
+      <div class="section-header">
+        <div class="section-icon">📉</div>
+        <div><div class="section-num">Section 7</div><h2>Minimax Regression (Simplex)</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>What it is</h3>
+        <p><strong>Chebyshev (L∞) regression</strong> fits a line ŷ = a + bx to data by minimizing the <em>maximum absolute error</em> across all points — not the sum of squares. The problem is reformulated as an LP and solved with the Two-Phase simplex method with full tableau display.</p>
+      </div>
+
+      <div class="sub">
+        <h3>When to use it</h3>
+        <ul>
+          <li>Worst-case error matters more than average error.</li>
+          <li>No single point should deviate by more than a uniform bound.</li>
+          <li>As a teaching exercise: connecting LP to statistical fitting.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>System limits</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Data points</div><div class="lc-val">Min 3, max 12 (x, y) pairs</div></div>
+          <div class="limit-card"><div class="lc-label">Coordinate range</div><div class="lc-val">−1 000 000 to +1 000 000</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>How to enter data</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Set the number of data points (3–12).</p></div>
+          <div class="step"><div class="step-num">2</div><p>For each point enter the <strong>x</strong> value and the <strong>y</strong> value.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Click <strong>Solve</strong>. Points do not need to be sorted by x.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>What the result displays</h3>
+        <ul>
+          <li>Fitted line parameters: â (intercept) and b̂ (slope).</li>
+          <li>Z* = minimized maximum absolute error.</li>
+          <li>Residuals table: y_i, ŷ_i, |error_i| for each point.</li>
+          <li>Complete Phase I and Phase II tableaux.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Quick example</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Example</div>
+          <pre>Points: (1, 1), (2, 3), (3, 2), (4, 5)
+
+➜ n=4, enter the 4 (x, y) pairs
+✔ Result: â and b̂ such that max|residual| is minimized</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══ REFERENCE TABLES ══ -->
+    <section class="section" id="reference">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div><div class="section-num">Reference</div><h2>Quick Reference Tables</h2></div>
+      </div>
+
+      <div class="sub">
+        <h3>Method selection guide</h3>
+        <table class="cmp-table">
+          <thead><tr><th>Problem type</th><th>Recommended method</th></tr></thead>
+          <tbody>
+            <tr><td>2 variables, all ≤</td><td>Graphical Method</td></tr>
+            <tr><td>Many variables, all ≤</td><td>Simplex Method</td></tr>
+            <tr><td>Has ≥ or = constraints</td><td>Two-Phase Method</td></tr>
+            <tr><td>Has ≥ or = (single-phase preferred)</td><td>Big-M Method</td></tr>
+            <tr><td>Transportation (find optimum)</td><td>MOD / MODI Method</td></tr>
+            <tr><td>Transportation (initial solution)</td><td>Vogel's Method</td></tr>
+            <tr><td>Minimax linear regression</td><td>Simplex Regression</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub" style="margin-top:28px">
+        <h3>Constraint type compatibility</h3>
+        <table class="cmp-table">
+          <thead><tr><th>Method</th><th>≤</th><th>≥</th><th>=</th></tr></thead>
+          <tbody>
+            <tr><td>Graphical</td><td class="yes">✔</td><td class="yes">✔</td><td class="no">✗</td></tr>
+            <tr><td>Simplex</td><td class="yes">✔</td><td class="no">✗</td><td class="no">✗</td></tr>
+            <tr><td>Two-Phase</td><td class="yes">✔</td><td class="yes">✔</td><td class="yes">✔</td></tr>
+            <tr><td>Big-M</td><td class="yes">✔</td><td class="yes">✔</td><td class="yes">✔</td></tr>
+            <tr><td>MOD (MODI)</td><td class="na">N/A</td><td class="na">N/A</td><td class="na">N/A</td></tr>
+            <tr><td>Vogel's</td><td class="na">N/A</td><td class="na">N/A</td><td class="na">N/A</td></tr>
+            <tr><td>Simplex Regression</td><td class="na">N/A</td><td class="na">N/A</td><td class="na">N/A</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub" style="margin-top:28px">
+        <h3>Size limits summary</h3>
+        <table class="cmp-table">
+          <thead><tr><th>Method</th><th>Max Variables</th><th>Max Constraints</th><th>Notes</th></tr></thead>
+          <tbody>
+            <tr><td>Graphical</td><td>2 (fixed)</td><td>12</td><td>—</td></tr>
+            <tr><td>Simplex</td><td>10</td><td>12</td><td>≤ only</td></tr>
+            <tr><td>Two-Phase</td><td>8</td><td>12</td><td>≤, ≥, = OK</td></tr>
+            <tr><td>Big-M</td><td>Flexible</td><td>12</td><td>≤, ≥, = OK</td></tr>
+            <tr><td>MOD (MODI)</td><td>—</td><td>—</td><td>10×10 matrix max</td></tr>
+            <tr><td>Vogel's</td><td>—</td><td>—</td><td>10×10 matrix max</td></tr>
+            <tr><td>Simplex Regression</td><td>—</td><td>—</td><td>3–12 data points</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub" style="margin-top:28px">
+        <h3>Glossary</h3>
+        <dl class="glossary">
+          <div class="gl-item"><dt>LP</dt><dd>Linear Program / Linear Programming</dd></div>
+          <div class="gl-item"><dt>BFS / IBFS</dt><dd>Basic Feasible Solution (Initial)</dd></div>
+          <div class="gl-item"><dt>RHS</dt><dd>Right-Hand Side of a constraint</dd></div>
+          <div class="gl-item"><dt>Tableau</dt><dd>Simplex table with constraint rows and objective row</dd></div>
+          <div class="gl-item"><dt>Pivot</dt><dd>Selected element for the row operation in Simplex</dd></div>
+          <div class="gl-item"><dt>Degeneracy</dt><dd>Basic variable with value 0</dd></div>
+          <div class="gl-item"><dt>Shadow price</dt><dd>Marginal increase of Z per unit increase in RHS</dd></div>
+          <div class="gl-item"><dt>MODI</dt><dd>Modified Distribution Method (transportation)</dd></div>
+          <div class="gl-item"><dt>Minimax / L∞</dt><dd>Minimization of maximum error (Chebyshev norm)</dd></div>
+          <div class="gl-item"><dt>u_i, v_j</dt><dd>MODI dual multipliers for rows and columns</dd></div>
+        </dl>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section');
+const links = document.querySelectorAll('.sidebar nav a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar nav a[href="#${e.target.id}"]`);
+      if(link) link.classList.add('active');
+    }
+  });
+}, {rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
