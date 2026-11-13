@@ -171,6 +171,20 @@
             background:linear-gradient(135deg,#1e3a5f,#0f2942);
             border:1px solid rgba(0,0,0,.06);
         }
+        /* Ícono propio del Método de Vogel: camión cuya carga es una tabla de transporte */
+        .mod-icon-vogel svg{width:36px;height:36px;overflow:visible}
+        .mod-icon-vogel .iv-via{stroke:#ffcc00;stroke-width:1.6;stroke-dasharray:3 3;stroke-linecap:round;fill:none;opacity:.8}
+        .mod-icon-vogel .iv-carga{fill:#ffcc00}
+        .mod-icon-vogel .iv-celdas{stroke:#0f2942;stroke-width:1;opacity:.55;fill:none}
+        .mod-icon-vogel .iv-cab{fill:#ffffff}
+        .mod-icon-vogel .iv-vidrio{fill:#1e3a5f}
+        .mod-icon-vogel .iv-rueda{fill:#ffffff;stroke:#0f2942;stroke-width:1.6}
+        .mod-icon-vogel .iv-camion{transition:transform .5s cubic-bezier(.16,1,.3,1)}
+        .mod-card:hover .mod-icon-vogel .iv-camion{transform:translateX(2px);animation:iv-bache .5s ease-in-out infinite alternate}
+        .mod-card:hover .mod-icon-vogel .iv-via{animation:iv-via .6s linear infinite}
+        @keyframes iv-bache{to{transform:translate(2px,-.6px)}}
+        @keyframes iv-via{to{stroke-dashoffset:-6}}
+        @media (prefers-reduced-motion:reduce){.mod-card:hover .mod-icon-vogel *{animation:none}}
         .mod-info h3{
             font-family:'Space Grotesk',sans-serif;
             font-weight:600;font-size:1.05rem;
@@ -272,7 +286,7 @@
             <!-- Columna 1: 2 módulos -->
             <div class="modules-col">
                 <a href="{{ url_for('grafico_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon">📈</div>
                     <div class="mod-info">
                         <h3>Método Gráfico</h3>
                         <span>Región factible · Vértices · Solución óptima</span>
@@ -280,7 +294,19 @@
                     <span class="mod-arrow">→</span>
                 </a>
                 <a href="{{ url_for('vogel_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon mod-icon-vogel" aria-hidden="true">
+                        <svg viewBox="0 0 32 32">
+                            <path class="iv-via" d="M2 28.5H30"/>
+                            <g class="iv-camion">
+                                <rect class="iv-carga" x="3" y="9" width="16" height="12" rx="1.6"/>
+                                <path class="iv-celdas" d="M8.3 9V21M13.7 9V21M3 15H19"/>
+                                <path class="iv-cab" d="M19.5 12.5H25L29 17V21H19.5Z"/>
+                                <path class="iv-vidrio" d="M21.5 14H24.3L26.6 16.8H21.5Z"/>
+                                <circle class="iv-rueda" cx="8" cy="23.2" r="2.6"/>
+                                <circle class="iv-rueda" cx="24" cy="23.2" r="2.6"/>
+                            </g>
+                        </svg>
+                    </div>
                     <div class="mod-info">
                         <h3>Método Vogel</h3>
                         <span>Índice de penalización · Solución óptima</span>
@@ -292,15 +318,15 @@
             <!-- Columna 2: 3 módulos (columna de la mitad) -->
             <div class="modules-col">
                 <a href="{{ url_for('mod_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon">🔄</div>
                     <div class="mod-info">
-                        <h3>Método MOD</h3>
+                        <h3>Método MODI</h3>
                         <span>Mejora iterativa · Costos reducidos</span>
                     </div>
                     <span class="mod-arrow">→</span>
                 </a>
                 <a href="{{ url_for('regresion_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon">📉</div>
                     <div class="mod-info">
                         <h3>Regresión lineal con Simplex</h3>
                         <span>Ajuste lineal · Parámetros óptimos</span>
@@ -308,7 +334,7 @@
                     <span class="mod-arrow">→</span>
                 </a>
                 <a href="{{ url_for('gran_m_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon">Ⓜ️</div>
                     <div class="mod-info">
                         <h3>Método Gran M</h3>
                         <span>Tabla Gran M · Iteraciones · Solución óptima</span>
@@ -320,7 +346,7 @@
             <!-- Columna 3: 2 módulos -->
             <div class="modules-col">
                 <a href="{{ url_for('simplex_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon">🧮</div>
                     <div class="mod-info">
                         <h3>Método Simplex</h3>
                         <span>Tabla Simplex · Iteraciones · Solución óptima</span>
@@ -328,7 +354,7 @@
                     <span class="mod-arrow">→</span>
                 </a>
                 <a href="{{ url_for('dos_fases_bp.vista_principal') }}" class="mod-card">
-                    <div class="mod-icon">📐</div>
+                    <div class="mod-icon">⚖️</div>
                     <div class="mod-info">
                         <h3>Método de las Dos Fases</h3>
                         <span>Fase 1 · Fase 2 · Restricciones ≥ y =</span>

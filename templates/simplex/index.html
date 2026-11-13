@@ -4,61 +4,122 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Método Simplex</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/simplex.css') }}">
 </head>
 <body>
-  <header>
-    <div class="topbar"><a href="{{ url_for('index') }}" class="brand">OPTILAB <span>/ USTA</span></a><button id="theme" type="button" aria-label="Cambiar tema">☾ / ☀</button></div>
-    <div class="hero">
+  <header class="hero">
+    <nav class="topbar">
+      <a href="{{ url_for('index') }}" class="back">← OptiLab</a>
+      <button id="theme" type="button" aria-label="Cambiar entre modo día y modo noche"><span class="sun">☀</span><span class="moon">☾</span></button>
+    </nav>
+    <div class="hero-grid">
       <div>
-        <div class="eyebrow">LABORATORIO INTERACTIVO · MÉTODO SIMPLEX</div>
-        <h1>Simplex normal<br><em>paso a paso.</em></h1>
-        <p>Define el modelo, cuéntanos el contexto y obtén la solución óptima, el análisis de sensibilidad y una interpretación en lenguaje claro.</p>
+        <p class="kicker">Programación lineal · método de las tablas</p>
+        <h1 aria-label="Simplex">
+          <span class="l l1">S</span><span class="l l2">I</span><span class="l l3">M</span><span class="l l4">P</span><span class="l l5">L</span><span class="l l6">E</span><span class="l l7">X</span>
+        </h1>
+        <p class="lede">Plantea el problema, cuéntanos el contexto y mira cómo el algoritmo <strong>salta de vértice en vértice</strong> hasta el óptimo. Al final, te lo explicamos con palabras.</p>
+        <div class="stickers" aria-hidden="true"><span class="stk s1">x ≥ 0</span><span class="stk s2">A·x ≤ b</span><span class="stk s3">max Z</span><span class="stk s4">b ≥ 0</span></div>
       </div>
-      <div class="hero-mark">SX<span>02</span></div>
+      <div class="board" aria-hidden="true">
+        <div class="board-title">tabla · iteración 1</div>
+        <div class="cells">
+          <i>1</i><i>0</i><i>1</i><i>0</i><i>0</i><i>4</i>
+          <i>0</i><i class="pv">2</i><i>0</i><i>1</i><i>0</i><i>12</i>
+          <i>3</i><i>2</i><i>0</i><i>0</i><i>1</i><i>18</i>
+          <i class="z">−3</i><i class="z">−5</i><i class="z">0</i><i class="z">0</i><i class="z">0</i><i class="z">0</i>
+        </div>
+        <div class="board-note">← el pivote</div>
+      </div>
     </div>
   </header>
+  <div class="marquee" aria-hidden="true"><div class="track"><span>MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦ MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦&nbsp;</span><span>MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦ MAXIMIZA ✦ MINIMIZA ✦ PIVOTEA ✦ ITERA ✦ OPTIMIZA ✦ INTERPRETA ✦&nbsp;</span></div></div>
+
   <main data-api-url="{{ url_for('simplex_bp.calcular') }}" data-max-vars="{{ max_variables }}" data-max-res="{{ max_restricciones }}">
-    <section class="card wide">
-      <div class="section-tag">01 / MODELO</div><h2>Define el problema</h2>
-      <p class="muted">Variables con x ≥ 0 y restricciones de tipo ≤ con lado derecho ≥ 0. Para restricciones ≥ o = usa el Simplex de dos fases. Acepta enteros, decimales y fracciones (1/3).</p>
-      <div class="actions controls">
+    <div id="print-head" class="print-only"></div>
+    <section class="card wide c1">
+      <span class="tag">01 · MODELO</span><h2>Plantea el problema</h2>
+      <p class="muted">Variables x ≥ 0 y restricciones ≤ con lado derecho ≥ 0. Para ≥ o = existe el Simplex de dos fases. Acepta enteros, decimales y fracciones (1/3).</p>
+      <div class="controls">
         <label>Objetivo <select id="sentido"><option value="max">Maximizar</option><option value="min">Minimizar</option></select></label>
         <label>Unidad de Z <input id="unidad-z" type="text" placeholder="pesos, USD…" class="text"></label>
-        <button id="add-var" type="button">+ Variable</button>
-        <button id="add-res" type="button">+ Restricción</button>
+        <button id="add-var" type="button" class="btn">+ Variable</button>
+        <button id="add-res" type="button" class="btn">+ Restricción</button>
       </div>
       <div class="scroll"><table id="grid" class="grid"></table></div>
       <pre id="preview" class="preview" aria-label="Vista del modelo"></pre>
     </section>
-    <section class="card wide">
-      <div class="section-tag">02 / CONTEXTO</div><h2>Cuéntanos de qué trata</h2>
-      <textarea id="contexto" rows="4" placeholder="Describe el problema con tus palabras: qué se produce, qué recursos hay, qué se quiere lograr…"></textarea>
-      <div class="actions"><button id="sample" type="button">Cargar ejemplo</button><button class="primary" id="solve" type="button">Calcular con Simplex</button></div>
+
+    <section class="card wide c2">
+      <span class="tag">02 · CONTEXTO</span><h2>¿De qué trata?</h2>
+      <textarea id="contexto" rows="4" placeholder="Cuéntalo con tus palabras: qué se produce, qué recursos hay, qué se quiere lograr…"></textarea>
+      <p id="print-contexto" class="print-only"></p>
+      <div class="actions">
+        <label class="ej">Ejemplos <select id="ejemplos"><option value="">Elige un ejemplo…</option></select></label>
+        <button class="btn primary" id="solve" type="button">Resolver <span aria-hidden="true">→</span></button>
+      </div>
+      <p class="muted ej-nota" id="ej-nota" aria-live="polite"></p>
       <div id="error" role="alert"></div>
     </section>
-    <section class="card wide" id="result" hidden>
-      <div class="section-tag">03 / RESULTADO</div><h2>Solución óptima</h2>
+
+    <section class="card wide c3" id="result" hidden>
+      <span class="tag">03 · RESULTADO</span><h2>Solución óptima</h2>
       <div id="stats"></div>
+      <div class="actions noprint"><button id="print" type="button" class="btn">📄 Descargar informe (PDF)</button><span class="muted">Se abre la impresión: elige «Guardar como PDF».</span></div>
     </section>
-    <section class="card wide" id="interp" hidden>
-      <div class="section-tag">04 / INTERPRETACIÓN</div><h2>¿Qué significa?</h2>
+
+    <section class="card wide c4" id="path" hidden>
+      <span class="tag">04 · LA RUTA</span><h2>Así viajó el algoritmo</h2>
+      <div class="path-grid">
+        <div class="path-box" id="path-box">
+          <svg id="path-svg" viewBox="0 0 640 440" role="img" aria-label="Recorrido del Simplex por los vértices de la región factible"></svg>
+          <p class="muted center" id="path-na" hidden>La ruta sobre la región factible se dibuja cuando el problema tiene 2 variables.</p>
+        </div>
+        <div class="path-side">
+          <div class="player">
+            <button type="button" class="btn sm" id="p-reset" aria-label="Volver al inicio">⏮</button>
+            <button type="button" class="btn sm" id="p-prev" aria-label="Paso anterior">◀</button>
+            <button type="button" class="btn sm primary" id="p-play" aria-label="Reproducir">▶</button>
+            <button type="button" class="btn sm" id="p-next" aria-label="Paso siguiente">▶|</button>
+          </div>
+          <p class="p-info" id="p-info" aria-live="polite"></p>
+          <h3>Z en cada iteración</h3>
+          <svg id="zchart" viewBox="0 0 400 200" role="img" aria-label="Valor de Z en cada iteración"></svg>
+        </div>
+      </div>
+    </section>
+
+    <section class="card wide c5" id="interp" hidden>
+      <span class="tag">05 · INTERPRETACIÓN</span><h2>¿Qué significa?</h2>
       <div id="interp-body"></div>
     </section>
-    <section class="card wide" id="sens" hidden>
-      <div class="section-tag">05 / SENSIBILIDAD</div><h2>¿Qué tan estable es la solución?</h2>
+
+    <section class="card wide c6" id="sens" hidden>
+      <span class="tag">06 · SENSIBILIDAD</span><h2>¿Qué tan firme es la solución?</h2>
       <h3>Precios sombra y rango del lado derecho</h3>
       <div class="scroll"><table id="t-res"></table></div>
       <h3>Rangos de los coeficientes de Z</h3>
       <div class="scroll"><table id="t-var"></table></div>
     </section>
-    <section class="card wide" id="steps" hidden>
-      <div class="section-tag">06 / PROCEDIMIENTO</div><h2>Simplex, iteración por iteración</h2>
+
+    <section class="card wide c8" id="whatif" hidden>
+      <span class="tag">07 · ¿Y SI…?</span><h2>Mueve un recurso y mira qué pasa</h2>
+      <p class="muted">Elige un recurso y desliza su límite. Dentro del rango de validez, Z y las variables cambian en línea recta; al soltar, lo comprobamos resolviendo el Simplex de nuevo.</p>
+      <div class="pills" id="wi-pills" role="tablist" aria-label="Recurso a modificar"></div>
+      <div id="wi-body"></div>
+    </section>
+
+    <section class="card wide c7" id="steps" hidden>
+      <span class="tag">08 · PROCEDIMIENTO</span><h2>Tabla por tabla</h2>
       <p class="muted" id="modelo"></p>
-      <p class="muted">LD es el lado derecho; la celda amarilla indica el pivote de la siguiente iteración. La última fila es Z (zⱼ − cⱼ).</p>
+      <p class="muted">LD es el lado derecho; la celda roja pulsante es el pivote de la siguiente iteración. La última fila es Z (zⱼ − cⱼ).</p>
       <div id="tables"></div>
     </section>
   </main>
+  <footer class="foot">Simplex normal · variables de holgura · aritmética exacta</footer>
 <script src="{{ url_for('static', filename='js/simplex.js') }}" defer></script>
 </body>
 </html>
