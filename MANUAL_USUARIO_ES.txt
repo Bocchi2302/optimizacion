@@ -1,0 +1,598 @@
+================================================================================
+         MANUAL DE USUARIO — APLICACIÓN WEB DE MÉTODOS DE OPTIMIZACIÓN
+                         (Investigación Operativa — Flask)
+================================================================================
+Versión: 1.0  |  Idioma: Español  |  Orientado a estudiantes de IO
+================================================================================
+
+ÍNDICE
+------
+  1. Método Gráfico
+  2. Método Simplex (con Análisis de Sensibilidad)
+  3. Método Dos Fases
+  4. Método Gran M
+  5. Método MOD / MODI (Transporte)
+  6. Método de Vogel (Transporte)
+  7. Regresión Simplex — Minimax
+
+================================================================================
+  SECCIÓN 1 — MÉTODO GRÁFICO
+================================================================================
+
+1.1  ¿QUÉ ES?
+-------------
+El Método Gráfico resuelve problemas de Programación Lineal (PL) con exactamente
+dos variables de decisión (X1 y X2) representándolos en un plano cartesiano.
+Cada restricción define un semiplano; la región factible es la intersección de
+todos ellos. El óptimo se encuentra en uno de los vértices (puntos extremos) de
+dicha región.
+
+La aplicación también incluye un extractor automático de enunciado: si pegas un
+problema en texto libre (por ejemplo, copiado de un libro), el sistema intenta
+identificar la función objetivo y las restricciones sin que tengas que transcribir
+cada coeficiente manualmente.
+
+1.2  ¿CUÁNDO USARLO?
+--------------------
+- Cuando el problema tiene EXACTAMENTE 2 variables de decisión.
+- Para visualizar gráficamente la región factible y el punto óptimo.
+- Como paso pedagógico para entender qué hace el Simplex internamente.
+
+1.3  LÍMITES DEL SISTEMA
+------------------------
+  • Número de variables   : exactamente 2 (X1 y X2)
+  • Número de restricciones: máximo 12
+  • Tipo de restricciones : <=, >= o =
+  • Rango de coeficientes : −10^9 a +10^9
+  • Coeficientes aceptados: enteros, decimales (ej: 3.5) o fracciones (ej: 1/3)
+
+1.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+Opción A — Formulario manual:
+  a) Selecciona "Maximizar" o "Minimizar".
+  b) Ingresa los coeficientes C1 y C2 de la función objetivo Z = C1·X1 + C2·X2.
+  c) Para cada restricción ingresa:
+       - Coeficiente de X1
+       - Coeficiente de X2
+       - Tipo: <= , >= o =
+       - Lado derecho (RHS)
+  d) Presiona "Resolver".
+
+Opción B — Extractor de texto:
+  a) Pega el enunciado del problema en el cuadro de texto libre.
+  b) El sistema parsea automáticamente objetivo y restricciones.
+  c) Revisa que los campos quedaron correctos y presiona "Resolver".
+
+Formato de fracciones: escribe  1/3  o  2/5  directamente en el campo.
+
+1.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Gráfico interactivo con:
+      - Rectas de cada restricción
+      - Región factible sombreada
+      - Vértices de la región factible marcados
+      - Punto óptimo resaltado con sus coordenadas
+  • Tabla de vértices con valor de Z en cada uno
+  • Valor óptimo de Z y coordenadas (X1*, X2*)
+  • Dirección de mejora de la función objetivo (flecha)
+
+1.6  CASOS ESPECIALES
+----------------------
+  INFACTIBLE: La región factible está vacía (las restricciones son
+              contradictorias). El sistema muestra el mensaje "No existe
+              región factible" y el gráfico no tiene área sombreada.
+
+  NO ACOTADO:  La región factible se extiende infinitamente en la dirección
+              de optimización. El sistema avisa "Problema no acotado".
+
+  MÚLTIPLES ÓPTIMOS: Si la función objetivo es paralela a una restricción
+              activa en el óptimo, toda una arista del polígono es óptima.
+              El sistema indica "Solución óptima múltiple" y muestra los
+              dos vértices extremos de dicha arista.
+
+1.7  EJEMPLO RÁPIDO
+--------------------
+Maximizar   Z = 5X1 + 4X2
+Sujeto a:
+    6X1 + 4X2 <= 24
+    X1 + 2X2  <= 6
+    X1 >= 0,  X2 >= 0
+
+Ingresa C1=5, C2=4; restricción 1: 6, 4, <=, 24; restricción 2: 1, 2, <=, 6.
+Resultado esperado: Z* = 21  en  (3, 1.5).
+
+================================================================================
+  SECCIÓN 2 — MÉTODO SIMPLEX (con Análisis de Sensibilidad)
+================================================================================
+
+2.1  ¿QUÉ ES?
+-------------
+El Algoritmo Simplex recorre los vértices de la región factible de manera
+eficiente para encontrar el óptimo de un problema de PL con cualquier número
+de variables. Parte de una solución básica factible (SBF) y aplica operaciones
+de pivoteo hasta que ninguna variable no-básica pueda mejorar el objetivo.
+
+La aplicación muestra cada iteración del tableau y, al finalizar, presenta un
+Análisis de Sensibilidad sobre los coeficientes de la función objetivo y los
+lados derechos de las restricciones.
+
+Variables con nombre y unidad: puedes asignar nombres descriptivos a cada
+variable (ej: "Producto A") y unidades (ej: "kg", "horas") para que los
+reportes sean más legibles.
+
+2.2  ¿CUÁNDO USARLO?
+--------------------
+- Problemas con más de 2 variables.
+- Cuando sólo hay restricciones de tipo <=  (desigualdad menor o igual).
+- Para obtener el análisis de sensibilidad (rangos de optimalidad).
+
+2.3  LÍMITES DEL SISTEMA
+------------------------
+  • Número de variables   : máximo 10
+  • Número de restricciones: máximo 12
+  • Tipo de restricciones : SOLO  <=
+  • Rango de coeficientes : −10^9 a +10^9
+  • Variables no negatividad: implícita (Xi >= 0 para todo i)
+
+2.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+  a) Selecciona "Maximizar" o "Minimizar".
+  b) Indica el número de variables (1–10) y de restricciones (1–12).
+  c) (Opcional) Asigna un nombre y unidad a cada variable.
+  d) Ingresa la fila de coeficientes de la función objetivo.
+  e) Para cada restricción ingresa los coeficientes y el RHS (siempre <=).
+  f) Presiona "Resolver".
+
+Nota: si tu problema tiene restricciones >= o =, usa Dos Fases o Gran M.
+
+2.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Tableau inicial (con variables de holgura agregadas)
+  • Tableau en cada iteración: variable que entra, variable que sale, pivote
+  • Solución óptima: valor de cada variable y valor de Z*
+  • Variables de holgura y su interpretación
+  • Análisis de Sensibilidad:
+      - Rango de optimalidad para cada Cj (coeficiente objetivo)
+      - Rango de factibilidad para cada bi (RHS)
+      - Precios sombra (valores duales) por restricción
+
+2.6  CASOS ESPECIALES
+----------------------
+  INFACTIBLE: No ocurre directamente con restricciones <= (el origen siempre
+              es factible si RHS >= 0). Si algún RHS es negativo, el sistema
+              detecta la infactibilidad.
+
+  NO ACOTADO:  Si en alguna iteración no hay razón de salida válida (todos
+              los coeficientes de la columna pivote son <= 0 para maximizar),
+              el sistema avisa "Problema no acotado".
+
+  DEGENERACIÓN: Ocurre cuando una variable básica tiene valor 0. El sistema
+              lo indica en el tableau. Puede causar ciclado (raro en práctica).
+
+  MÚLTIPLES ÓPTIMOS: Si al final alguna variable no-básica tiene costo
+              reducido = 0, existe solución óptima alternativa. El sistema lo
+              indica y muestra la solución alternativa si es posible.
+
+2.7  EJEMPLO RÁPIDO
+--------------------
+Maximizar   Z = 5X1 + 4X2 + 3X3
+Sujeto a:
+    6X1 + 4X2 + 2X3 <= 240
+    3X1 + 2X2 + 5X3 <= 270
+    5X1 + 6X2 + 5X3 <= 420
+
+Variables: 3,  Restricciones: 3
+Resultado esperado: revisar tableau final para Z* y valores de X1, X2, X3.
+
+================================================================================
+  SECCIÓN 3 — MÉTODO DOS FASES
+================================================================================
+
+3.1  ¿QUÉ ES?
+-------------
+El Método Dos Fases resuelve problemas de PL que tienen restricciones >=, = o
+una mezcla de tipos, donde el origen no es una SBF válida. Se divide en:
+
+  FASE 1: Minimizar la suma de variables artificiales para encontrar una SBF.
+            Si el mínimo es 0 (todas las artificiales salen de la base), existe
+            solución factible y se pasa a Fase 2.
+  FASE 2: Optimizar la función objetivo original usando la SBF hallada.
+
+La aplicación usa aritmética exacta con fracciones (módulo Fraction de Python),
+lo que elimina errores de redondeo y muestra tableau con valores exactos.
+
+3.2  ¿CUÁNDO USARLO?
+--------------------
+- Problemas con restricciones >= o = (o mixtos con <=).
+- Cuando se necesita verificar factibilidad antes de optimizar.
+- Cuando la exactitud numérica es prioritaria.
+
+3.3  LÍMITES DEL SISTEMA
+------------------------
+  • Número de variables   : máximo 8
+  • Número de restricciones: máximo 12
+  • Tipos de restricciones : <=, >= y = (cualquier combinación)
+  • Aritmética             : exacta con Fraction (sin errores flotantes)
+
+3.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+  a) Selecciona "Maximizar" o "Minimizar".
+  b) Indica número de variables y restricciones.
+  c) Ingresa coeficientes de la función objetivo.
+  d) Para cada restricción: coeficientes, tipo (<=, >= o =) y RHS.
+  e) Presiona "Resolver".
+
+Formato de fracciones: escribe  3/4  o  −1/2  en cualquier campo numérico.
+
+3.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Tableau completo de cada iteración de la Fase 1
+  • Resultado de la Fase 1 (factible / infactible)
+  • Tableau completo de cada iteración de la Fase 2 (si aplica)
+  • Solución óptima con valores exactos (fracciones, no decimales)
+  • Variables artificiales, de holgura y de exceso identificadas
+
+3.6  CASOS ESPECIALES
+----------------------
+  INFACTIBLE: Al final de Fase 1 alguna artificial sigue en la base con
+              valor > 0. Sistema muestra "Problema infactible".
+
+  ARTIFICIAL EN BASE CON VALOR 0: Situación de degeneración. El sistema la
+              maneja automáticamente (puede o no retirarla de la base).
+
+  NO ACOTADO:  Detectado en Fase 2 igual que en Simplex estándar.
+
+  MÚLTIPLES ÓPTIMOS: Detectado al final de Fase 2 si hay costos reducidos = 0.
+
+3.7  EJEMPLO RÁPIDO
+--------------------
+Minimizar   Z = 2X1 + 3X2
+Sujeto a:
+    X1 + X2  >= 4
+    X1 + 3X2 =  6
+    X1, X2 >= 0
+
+Variables: 2,  Restricciones: 2 (una >= y una =)
+Fase 1 introduce artificiales A1, A2.  Resultado esperado: Z* = 7 en (3, 1).
+
+================================================================================
+  SECCIÓN 4 — MÉTODO GRAN M
+================================================================================
+
+4.1  ¿QUÉ ES?
+-------------
+El Método Gran M (Big-M) es una alternativa al Dos Fases para manejar
+restricciones >= y =. Penaliza las variables artificiales con un coeficiente
+muy grande M en la función objetivo, forzando al Simplex a sacarlas de la base.
+
+La aplicación usa M como símbolo (representado como  a + b·M), lo que permite
+mostrar los coeficientes exactos en cada iteración sin asignar un valor numérico
+a M. Además, incluye un parser de texto plano: puedes pegar el modelo en
+formato natural y el sistema lo interpreta automáticamente.
+
+4.2  ¿CUÁNDO USARLO?
+--------------------
+- Cuando el problema tiene restricciones >= o = y se prefiere un único
+  tableau (en lugar de dos fases separadas).
+- Para modelos ingresados como texto libre (parser automático).
+
+4.3  LÍMITES DEL SISTEMA
+------------------------
+  • Tipos de restricciones : <=, >= y = (cualquier combinación)
+  • Coeficiente M          : simbólico (a + b·M), no numérico fijo
+  • Parser de texto        : acepta modelos en formato estándar de IO
+
+4.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+Opción A — Formulario estándar (igual que Dos Fases):
+  Ingresa objetivo, número de variables/restricciones y coeficientes.
+
+Opción B — Parser de texto plano:
+  Escribe o pega el modelo, por ejemplo:
+    Max Z = 3x1 + 5x2
+    s.a.
+    x1 + x2 <= 4
+    x1 + 3x2 >= 6
+    x1, x2 >= 0
+  El sistema reconoce "Max", "Min", "s.a.", "<=", ">=", "=".
+
+4.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Tableau inicial con columnas M simbólicas
+  • Tableau en cada iteración con valores  a + b·M
+  • Variable entrante y saliente por iteración
+  • Solución final con valores de variables y Z*
+
+4.6  CASOS ESPECIALES
+----------------------
+  INFACTIBLE: Si al terminar queda alguna artificial en la base (con valor
+              positivo), el sistema declara infactibilidad.
+
+  NO ACOTADO:  Detectado igual que en Simplex: sin razón de salida válida.
+
+  DEGENERACIÓN: Igual que Simplex; puede propagarse a través de las
+              iteraciones.
+
+4.7  EJEMPLO RÁPIDO
+--------------------
+Maximizar   Z = 3X1 + 2X2
+Sujeto a:
+    X1 + X2  =  4
+    X1       >= 1
+    X2       >= 1
+
+Parser de texto:
+    Max Z = 3x1 + 2x2
+    x1 + x2 = 4
+    x1 >= 1
+    x2 >= 1
+
+Resultado esperado: Z* = 11 en (3, 1).
+
+================================================================================
+  SECCIÓN 5 — MÉTODO MOD / MODI (TRANSPORTE)
+================================================================================
+
+5.1  ¿QUÉ ES?
+-------------
+El Método MODI (Modified Distribution Method) resuelve el Problema de
+Transporte óptimamente. Dado un conjunto de orígenes (con oferta) y destinos
+(con demanda), y costos unitarios de transporte, halla el plan de envíos de
+mínimo costo.
+
+El algoritmo calcula multiplicadores ui (para filas) y vj (para columnas), luego
+evalúa índices de mejora dij = cij − ui − vj para celdas no básicas. Si algún
+dij < 0, mejora la solución trazando un ciclo stepping-stone. Repite hasta que
+todos los dij >= 0.
+
+La aplicación incluye balanceo automático: si Σoferta ≠ Σdemanda, agrega
+automáticamente un origen o destino ficticio con costo 0.
+
+5.2  ¿CUÁNDO USARLO?
+--------------------
+- Problemas de distribución/transporte con m orígenes y n destinos.
+- Para optimizar una solución inicial (obtenida, por ejemplo, con Vogel).
+- Cuando se necesita conocer los precios sombra de la red.
+
+5.3  LÍMITES DEL SISTEMA
+------------------------
+  • Dimensión máxima: 10 orígenes × 10 destinos  (10×10)
+  • Oferta y demanda: números enteros o decimales positivos
+  • Costos          : números enteros o decimales no negativos
+  • Balanceo        : automático (agrega fila/columna ficticia si es necesario)
+
+5.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+  a) Indica el número de orígenes (m) y destinos (n).
+  b) Ingresa el vector de ofertas [a1, a2, ..., am].
+  c) Ingresa el vector de demandas [b1, b2, ..., bn].
+  d) Completa la matriz de costos C (m filas × n columnas).
+  e) (Opcional) Ingresa una solución inicial; si no, el sistema usa
+     la Esquina Noroeste como punto de partida para el MODI.
+  f) Presiona "Resolver".
+
+5.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Tabla de la solución con cantidades enviadas xij
+  • Multiplicadores ui y vj de cada iteración
+  • Índices de mejora dij para celdas no básicas
+  • Ciclo stepping-stone trazado (con signos + y −)
+  • Costo total óptimo Z* = Σ cij·xij
+  • Aviso de balanceo si se agregó fila/columna ficticia
+
+5.6  CASOS ESPECIALES
+----------------------
+  PROBLEMA DEGENERADO: Número de celdas básicas < m + n − 1. El sistema
+              agrega una asignación épsilon (ε) en una celda estratégica para
+              mantener la no-degeneración y poder calcular ui, vj.
+
+  SOLUCIONES MÚLTIPLES: Si al optimizar algún dij = 0 en celda no básica,
+              existen planes alternativos de igual costo. El sistema lo indica.
+
+  PROBLEMA NO BALANCEADO: La aplicación inserta automáticamente el origen o
+              destino ficticio y lo informa en el resultado.
+
+5.7  EJEMPLO RÁPIDO
+--------------------
+Orígenes: 2  (oferta: [30, 40])
+Destinos: 3  (demanda: [20, 30, 20])
+Costos:
+       D1  D2  D3
+  O1 [  2   3   1 ]
+  O2 [  5   4   8 ]
+
+El problema está balanceado (Σoferta = 70 = Σdemanda).
+Resultado esperado: Z* mínimo con asignaciones óptimas.
+
+================================================================================
+  SECCIÓN 6 — MÉTODO DE VOGEL (TRANSPORTE)
+================================================================================
+
+6.1  ¿QUÉ ES?
+-------------
+El Método de Vogel calcula una Solución Básica Factible Inicial (SBFI) de alta
+calidad para problemas de transporte. Usa el concepto de "penalización": para
+cada fila y columna calcula la diferencia entre los dos costos más bajos. Se
+asigna primero a la celda de menor costo en la fila/columna de mayor
+penalización. Esto produce soluciones iniciales generalmente muy cercanas al
+óptimo (a menudo óptimas o con 1-2 iteraciones MODI para serlo).
+
+La aplicación también verifica optimalidad mediante el criterio u-v tras obtener
+la SBFI.
+
+6.2  ¿CUÁNDO USARLO?
+--------------------
+- Para obtener una buena solución inicial antes de aplicar MODI.
+- Cuando se quiere una SBFI mejor que la Esquina Noroeste o Costo Mínimo.
+- Para problemas donde la calidad de la solución inicial importa.
+
+6.3  LÍMITES DEL SISTEMA
+------------------------
+  • Dimensión máxima: 10 orígenes × 10 destinos  (10×10)
+  • Oferta y demanda: números enteros o decimales positivos
+  • Costos          : números enteros o decimales no negativos
+  • Verificación u-v: incluida automáticamente al finalizar
+
+6.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+  a) Indica el número de orígenes (m) y destinos (n).
+  b) Ingresa el vector de ofertas.
+  c) Ingresa el vector de demandas.
+  d) Completa la matriz de costos.
+  e) Presiona "Resolver".
+
+(Mismo formulario que MODI; ambos métodos comparten la interfaz de transporte.)
+
+6.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Tabla de penalizaciones en cada iteración (fila y columna seleccionada)
+  • Asignación realizada en cada paso con cantidad y celda elegida
+  • Matriz de asignaciones final (SBFI)
+  • Costo total de la solución inicial
+  • Verificación u-v: si todos los índices dij >= 0, la solución es óptima;
+    de lo contrario, se recomienda aplicar MODI.
+
+6.6  CASOS ESPECIALES
+----------------------
+  EMPATE EN PENALIZACIONES: Si dos filas o columnas tienen la misma
+              penalización máxima, el sistema usa el menor costo como
+              criterio de desempate.
+
+  PROBLEMA DEGENERADO: Si en un paso la asignación agota simultáneamente
+              oferta y demanda, el sistema agrega ε para mantener m+n−1
+              celdas básicas.
+
+  PROBLEMA NO BALANCEADO: Se agrega automáticamente fila o columna ficticia
+              con costos 0 (y se informa al usuario).
+
+6.7  EJEMPLO RÁPIDO
+--------------------
+(Mismo problema que MODI, Sección 5.7)
+Orígenes: 2  (oferta: [30, 40])
+Destinos: 3  (demanda: [20, 30, 20])
+Costos:
+       D1  D2  D3
+  O1 [  2   3   1 ]
+  O2 [  5   4   8 ]
+
+Penalización Fila O1 = 3−1 = 2;  Fila O2 = 5−4 = 1
+Penalización Col D1 = 5−2 = 3;  Col D2 = 4−3 = 1;  Col D3 = 8−1 = 7
+Primera asignación: D3 (penalización máxima columna 7), celda O1-D3 (costo 1).
+El proceso continúa hasta completar la SBFI.
+
+================================================================================
+  SECCIÓN 7 — REGRESIÓN SIMPLEX (MINIMAX / L∞)
+================================================================================
+
+7.1  ¿QUÉ ES?
+-------------
+La Regresión Minimax (también llamada regresión L∞ o de Chebyshev) ajusta una
+línea recta   ŷ = a + b·x   a un conjunto de puntos (xi, yi) minimizando el
+ERROR MÁXIMO absoluto (en lugar de la suma de cuadrados como en Mínimos
+Cuadrados).
+
+Formalmente minimiza:   Z = max_i |yi − (a + b·xi)|
+
+Este problema se transforma en un PL equivalente y se resuelve con el Método
+Dos Fases. La aplicación muestra el tableau completo de cada fase.
+
+7.2  ¿CUÁNDO USARLO?
+--------------------
+- Cuando el criterio de ajuste es el peor error individual (no el promedio).
+- En aplicaciones donde un error grande único es inaceptable.
+- Para ajuste robusto ante outliers extremos.
+- Como ejercicio de transformación de problemas a formato PL.
+
+7.3  LÍMITES DEL SISTEMA
+------------------------
+  • Número de puntos (xi, yi): mínimo 3, máximo 12
+  • Coordenadas xi, yi       : números reales (enteros o decimales)
+  • Modelo de regresión      : lineal simple  ŷ = a + b·x
+
+7.4  CÓMO INGRESAR LOS DATOS
+-----------------------------
+  a) Indica el número de puntos de datos (3–12).
+  b) Para cada punto ingresa el valor de x y el valor de y.
+  c) Presiona "Resolver".
+
+Nota: no es necesario ordenar los puntos por x; el sistema los procesa en
+cualquier orden.
+
+7.5  QUÉ MUESTRA EL RESULTADO
+------------------------------
+  • Parámetros de la recta ajustada:  â  (intercepto) y  b̂  (pendiente)
+  • Valor óptimo Z* = error máximo absoluto minimizado
+  • Tabla de residuos por punto: yi, ŷi = â + b̂·xi, error_i = |yi − ŷi|
+  • Punto(s) donde se alcanza el error máximo
+  • Tableau completo de Fase 1 y Fase 2 del Simplex subyacente
+  • Gráfico con puntos de datos y recta ajustada
+
+7.6  CASOS ESPECIALES
+----------------------
+  PUNTOS COLINEALES PERFECTOS: Si todos los puntos caen exactamente sobre
+              una recta, el error máximo es 0 y Z* = 0.
+
+  OUTLIERS: A diferencia de Mínimos Cuadrados, la recta Minimax no es
+              "atraída" por outliers; en cambio, balancea los errores para
+              minimizar el peor caso.
+
+  PUNTOS REPETIDOS EN x: Se permiten distintos y para el mismo x. El sistema
+              los trata como puntos independientes.
+
+7.7  EJEMPLO RÁPIDO
+--------------------
+Puntos: (1, 1), (2, 3), (3, 2), (4, 5)
+
+Ingresa n=4 y los cuatro pares (x, y).
+El sistema formulará el PL:
+    Minimizar   Z (el error máximo ε)
+    s.a.  para cada punto i:
+          yi − a − b·xi <=  ε
+        −(yi − a − b·xi) <= ε
+
+Resultado: â y b̂ tales que el mayor |residuo| es mínimo.
+
+================================================================================
+  NOTAS GENERALES DE USO
+================================================================================
+
+NAVEGACIÓN
+----------
+  • Cada método tiene su propia pestaña o enlace en el menú principal.
+  • Puedes volver al inicio en cualquier momento sin perder datos del formulario
+    (usa el botón "Limpiar" para resetear).
+
+ERRORES COMUNES
+---------------
+  1. Dejar campos vacíos: todos los coeficientes deben completarse (usa 0 si
+     el coeficiente es cero, no dejes el campo en blanco).
+  2. RHS negativo en Simplex estándar (<=): asegúrate de que bi >= 0.
+  3. Exceder los límites de dimensión: el formulario lo valida y muestra
+     un aviso antes de intentar resolver.
+  4. Fracciones mal escritas: usa la forma  numerador/denominador  sin espacios
+     (correcto: 1/3 — incorrecto: 1 / 3 o 1÷3).
+
+INTERPRETACIÓN DE RESULTADOS
+-----------------------------
+  • Variables de holgura (s1, s2, ...): representan recursos sin usar.
+  • Variables de exceso  (e1, e2, ...): representan el excedente sobre un
+    mínimo requerido (en restricciones >=).
+  • Variables artificiales (A1, A2, ...): deben ser 0 en la solución final;
+    si no lo son, el problema es infactible.
+  • Precio sombra (dual): aumento marginal de Z por unidad adicional de bi.
+
+GLOSARIO RÁPIDO
+---------------
+  PL           : Programación Lineal
+  SBF / SBFI   : Solución Básica Factible (Inicial)
+  RHS          : Right-Hand Side (lado derecho de la restricción)
+  Tableau      : Tabla del Simplex con filas de restricciones y fila objetivo
+  Pivote       : Elemento seleccionado para la operación de fila en Simplex
+  Degeneración : Variable básica con valor 0 en la solución
+  Dualidad     : Relación entre el problema primal y su problema dual asociado
+  MODI         : Modified Distribution Method (para transporte)
+  Minimax      : Minimización del máximo error (norma L∞)
+
+================================================================================
+  FIN DEL MANUAL DE USUARIO
+================================================================================

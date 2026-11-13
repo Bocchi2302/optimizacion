@@ -7,6 +7,7 @@ from blueprints.vogel_bp import vogel_bp
 from blueprints.regresion_bp import regresion_bp
 from blueprints.simplex_bp import simplex_bp
 from blueprints.dos_fases_bp import dos_fases_bp
+from blueprints.manual_bp import manual_bp
 
 app = Flask(__name__)
 
@@ -25,6 +26,9 @@ app.register_blueprint(simplex_bp, url_prefix='/metodo_simplex')
 
 # Registrar el Blueprint del Método de las Dos Fases
 app.register_blueprint(dos_fases_bp, url_prefix='/metodo_dos_fases')
+
+# Registrar el Blueprint del Manual de Usuario
+app.register_blueprint(manual_bp, url_prefix='/manual')
 
 # Ruta raíz: No usar 
 @app.route('/')

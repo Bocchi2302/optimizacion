@@ -1,0 +1,817 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manual de Usuario · OptiLab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --gold:#d97706;--gold-light:#fbbf24;--bg:#ffffff;--surface:#f8fafc;
+      --border:#e2e8f0;--text:#1a1a2e;--muted:#64748b;--code-bg:#f1f5f9;
+    }
+    body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;overflow-x:hidden}
+
+    /* ── topbar ── */
+    .topbar{
+      position:sticky;top:0;z-index:100;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:14px clamp(16px,4vw,48px);
+      background:rgba(255,255,255,.92);backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--border);
+    }
+    .topbar .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);
+      font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:1.05rem}
+    .topbar .dot{width:7px;height:7px;border-radius:50%;background:#22c55e;box-shadow:0 0 8px #22c55e88}
+    .topbar .lang-pill{
+      display:flex;gap:6px;align-items:center;
+      font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    }
+    .topbar .lang-pill a{
+      padding:4px 10px;border-radius:12px;text-decoration:none;color:var(--muted);
+      border:1px solid var(--border);transition:all .2s;
+    }
+    .topbar .lang-pill a.active{background:var(--gold);color:#fff;border-color:var(--gold)}
+    .topbar .lang-pill a:not(.active):hover{border-color:var(--gold);color:var(--gold)}
+    .back-btn{
+      display:flex;align-items:center;gap:6px;text-decoration:none;
+      font-size:.82rem;font-weight:500;color:var(--muted);
+      padding:5px 12px;border-radius:10px;border:1px solid var(--border);
+      transition:all .2s;
+    }
+    .back-btn:hover{color:var(--gold);border-color:var(--gold)}
+
+    /* ── layout ── */
+    .layout{display:flex;min-height:calc(100vh - 57px)}
+
+    /* ── sidebar ── */
+    .sidebar{
+      width:260px;flex-shrink:0;
+      position:sticky;top:57px;height:calc(100vh - 57px);overflow-y:auto;
+      padding:28px 20px;border-right:1px solid var(--border);
+      background:var(--surface);
+    }
+    .sidebar h4{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-bottom:12px}
+    .sidebar nav{display:flex;flex-direction:column;gap:4px}
+    .sidebar nav a{
+      display:flex;align-items:center;gap:10px;
+      padding:8px 10px;border-radius:10px;text-decoration:none;
+      font-size:.855rem;font-weight:500;color:var(--muted);
+      transition:all .18s;
+    }
+    .sidebar nav a .icon{font-size:1.1rem;width:22px;text-align:center;flex-shrink:0}
+    .sidebar nav a:hover{background:rgba(0,0,0,.04);color:var(--text)}
+    .sidebar nav a.active{background:linear-gradient(135deg,rgba(217,119,6,.12),rgba(251,191,36,.08));color:var(--gold)}
+
+    /* ── main content ── */
+    .main{flex:1;padding:40px clamp(20px,5vw,72px);max-width:860px}
+
+    .hero-manual{
+      margin-bottom:48px;padding-bottom:28px;border-bottom:1px solid var(--border);
+    }
+    .hero-manual .badge{
+      display:inline-flex;align-items:center;gap:6px;
+      font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--gold);background:rgba(217,119,6,.08);
+      border:1px solid rgba(217,119,6,.2);padding:4px 12px;border-radius:20px;margin-bottom:14px;
+    }
+    .hero-manual h1{
+      font-family:'Space Grotesk',sans-serif;font-size:clamp(1.8rem,4vw,2.6rem);
+      font-weight:700;line-height:1.15;letter-spacing:-.03em;margin-bottom:10px;
+    }
+    .hero-manual p{color:var(--muted);font-size:1rem;max-width:560px}
+
+    /* ── sections ── */
+    .section{margin-bottom:60px;scroll-margin-top:76px}
+    .section-header{
+      display:flex;align-items:center;gap:14px;margin-bottom:28px;
+      padding-bottom:14px;border-bottom:2px solid var(--border);
+    }
+    .section-icon{
+      width:46px;height:46px;border-radius:14px;
+      background:linear-gradient(135deg,#1e3a5f,#0f2942);
+      display:grid;place-items:center;font-size:1.3rem;flex-shrink:0;
+    }
+    .section-header h2{
+      font-family:'Space Grotesk',sans-serif;font-size:1.45rem;font-weight:700;letter-spacing:-.02em;
+    }
+    .section-num{font-size:.8rem;font-weight:600;color:var(--gold);text-transform:uppercase;letter-spacing:.06em}
+
+    /* ── subsections ── */
+    .sub{margin-bottom:24px}
+    .sub h3{
+      font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:700;
+      text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+      margin-bottom:10px;display:flex;align-items:center;gap:8px;
+    }
+    .sub h3::before{content:'';display:inline-block;width:3px;height:14px;background:var(--gold);border-radius:2px}
+    .sub p,.sub li{font-size:.93rem;color:#374151;line-height:1.75}
+    .sub ul,.sub ol{padding-left:20px;display:flex;flex-direction:column;gap:4px}
+
+    /* ── chips / badges ── */
+    .chip{
+      display:inline-flex;align-items:center;gap:4px;
+      font-size:.74rem;font-weight:600;padding:2px 9px;border-radius:8px;
+      border:1px solid;vertical-align:middle;
+    }
+    .chip-green{color:#166534;background:#dcfce7;border-color:#86efac}
+    .chip-red{color:#991b1b;background:#fee2e2;border-color:#fca5a5}
+    .chip-blue{color:#1e3a8a;background:#dbeafe;border-color:#93c5fd}
+    .chip-yellow{color:#92400e;background:#fef3c7;border-color:#fcd34d}
+
+    /* ── limits table ── */
+    .limits-grid{
+      display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;
+    }
+    .limit-card{
+      padding:14px 16px;border-radius:12px;border:1px solid var(--border);background:var(--surface);
+    }
+    .limit-card .lc-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:4px}
+    .limit-card .lc-val{font-size:1rem;font-weight:600;color:var(--text)}
+
+    /* ── steps ── */
+    .steps{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .step{display:flex;gap:14px;align-items:flex-start}
+    .step-num{
+      width:26px;height:26px;border-radius:50%;flex-shrink:0;
+      background:linear-gradient(135deg,var(--gold),var(--gold-light));
+      color:#fff;font-size:.78rem;font-weight:700;display:grid;place-items:center;
+      margin-top:2px;
+    }
+    .step p{font-size:.92rem;color:#374151;line-height:1.65}
+
+    /* ── special cases ── */
+    .cases{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+    .case-card{padding:12px 16px;border-radius:10px;border-left:3px solid;background:var(--surface)}
+    .case-card.infeasible{border-color:#ef4444}
+    .case-card.unbounded{border-color:#f59e0b}
+    .case-card.multiple{border-color:#3b82f6}
+    .case-card.degenerate{border-color:#8b5cf6}
+    .case-card strong{font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:3px}
+    .case-card.infeasible strong{color:#dc2626}
+    .case-card.unbounded strong{color:#d97706}
+    .case-card.multiple strong{color:#2563eb}
+    .case-card.degenerate strong{color:#7c3aed}
+    .case-card p{font-size:.88rem;color:#4b5563;line-height:1.6}
+
+    /* ── example box ── */
+    .example-box{
+      margin-top:12px;padding:18px 20px;border-radius:12px;
+      background:linear-gradient(135deg,rgba(217,119,6,.04),rgba(251,191,36,.03));
+      border:1px solid rgba(217,119,6,.15);
+    }
+    .example-box pre{
+      font-family:'JetBrains Mono','Fira Code','Courier New',monospace;
+      font-size:.82rem;line-height:1.75;color:#374151;white-space:pre-wrap;
+    }
+    .example-box .ex-label{
+      font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+      color:var(--gold);margin-bottom:10px;
+    }
+
+    /* ── comparison table ── */
+    .cmp-table{width:100%;border-collapse:collapse;font-size:.86rem;margin-top:12px}
+    .cmp-table th{background:#1e3a5f;color:#fff;padding:9px 14px;text-align:left;font-size:.78rem;text-transform:uppercase;letter-spacing:.06em}
+    .cmp-table td{padding:9px 14px;border-bottom:1px solid var(--border)}
+    .cmp-table tr:nth-child(even) td{background:var(--surface)}
+    .yes{color:#166534;font-weight:700}
+    .no{color:#991b1b;font-weight:700}
+    .na{color:var(--muted)}
+
+    /* ── glossary ── */
+    .glossary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .gl-item{padding:10px 14px;border-radius:10px;background:var(--surface);border:1px solid var(--border)}
+    .gl-item dt{font-size:.78rem;font-weight:700;color:var(--gold);font-family:'Space Grotesk',sans-serif;margin-bottom:2px}
+    .gl-item dd{font-size:.82rem;color:#4b5563;line-height:1.55}
+
+    /* ── scrollbar ── */
+    .sidebar::-webkit-scrollbar{width:4px}
+    .sidebar::-webkit-scrollbar-track{background:transparent}
+    .sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+
+    /* ── responsive ── */
+    @media(max-width:768px){
+      .sidebar{display:none}
+      .limits-grid{grid-template-columns:1fr}
+      .glossary{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Topbar ── -->
+<header class="topbar">
+  <div style="display:flex;align-items:center;gap:16px">
+    <a href="{{ url_for('index') }}" class="back-btn">← Inicio</a>
+    <a href="#" class="brand"><span class="dot"></span> OptiLab</a>
+  </div>
+  <div class="lang-pill">
+    <a href="{{ url_for('manual_bp.manual_es') }}" class="active">ES</a>
+    <a href="{{ url_for('manual_bp.manual_en') }}">EN</a>
+  </div>
+</header>
+
+<div class="layout">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <h4>Contenido</h4>
+    <nav>
+      <a href="#grafico" class="active"><span class="icon">📈</span>Método Gráfico</a>
+      <a href="#simplex"><span class="icon">🧮</span>Simplex</a>
+      <a href="#dos-fases"><span class="icon">⚖️</span>Dos Fases</a>
+      <a href="#gran-m"><span class="icon">Ⓜ️</span>Gran M</a>
+      <a href="#modi"><span class="icon">🔄</span>MOD / MODI</a>
+      <a href="#vogel"><span class="icon">🚚</span>Vogel</a>
+      <a href="#regresion"><span class="icon">📉</span>Regresión Minimax</a>
+      <a href="#referencia"><span class="icon">📋</span>Tabla de Referencia</a>
+    </nav>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <div class="hero-manual">
+      <div class="badge">📘 Manual de Usuario</div>
+      <h1>Guía de uso de OptiLab</h1>
+      <p>Referencia completa para los 7 métodos de optimización — Investigación Operativa · Flask · USTA 2025</p>
+    </div>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 1 — MÉTODO GRÁFICO
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="grafico">
+      <div class="section-header">
+        <div class="section-icon">📈</div>
+        <div>
+          <div class="section-num">Sección 1</div>
+          <h2>Método Gráfico</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>Resuelve problemas de Programación Lineal (PL) con <strong>exactamente 2 variables</strong> (X1 y X2) representándolos en un plano cartesiano. Cada restricción define un semiplano; la región factible es su intersección. El óptimo está en uno de los vértices. Incluye un <strong>extractor automático de enunciados</strong>: pega el texto del problema y el sistema identifica la función objetivo y restricciones sin transcripción manual.</p>
+      </div>
+
+      <div class="sub">
+        <h3>¿Cuándo usarlo?</h3>
+        <ul>
+          <li>El problema tiene <strong>exactamente 2</strong> variables de decisión.</li>
+          <li>Querés visualizar gráficamente la región factible y el punto óptimo.</li>
+          <li>Como paso pedagógico para entender qué hace el Simplex internamente.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Límites del sistema</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Variables</div><div class="lc-val">Exactamente 2 (X1, X2)</div></div>
+          <div class="limit-card"><div class="lc-label">Restricciones</div><div class="lc-val">Máximo 12</div></div>
+          <div class="limit-card"><div class="lc-label">Tipos</div><div class="lc-val">≤, ≥ o =</div></div>
+          <div class="limit-card"><div class="lc-label">Rango coeficientes</div><div class="lc-val">−10⁹ a +10⁹</div></div>
+        </div>
+        <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">Formatos aceptados: <code>3</code> · <code>3.5</code> · <code>1/3</code> · <code>-2/5</code></p>
+      </div>
+
+      <div class="sub">
+        <h3>Cómo ingresar los datos</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Seleccioná <strong>Maximizar</strong> o <strong>Minimizar</strong>.</p></div>
+          <div class="step"><div class="step-num">2</div><p>Ingresá los coeficientes C1 y C2 de Z = C1·X1 + C2·X2.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Para cada restricción: coeficiente de X1, coeficiente de X2, operador (≤/≥/=) y lado derecho (LD).</p></div>
+          <div class="step"><div class="step-num">4</div><p>Presioná <strong>Resolver</strong>. <em>Alternativa:</em> pegá el enunciado en el extractor de texto y presioná <strong>Extraer</strong>, revisá los campos y luego <strong>Resolver</strong>.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Gráfico interactivo: rectas de restricciones, región factible sombreada, vértices y punto óptimo.</li>
+          <li>Tabla de vértices con valor de Z en cada uno.</li>
+          <li>Coordenadas del óptimo (X1*, X2*) y valor Z*.</li>
+          <li>Flecha de mejora de la función objetivo.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Casos especiales</h3>
+        <div class="cases">
+          <div class="case-card infeasible"><strong>Infactible</strong><p>La región factible está vacía (restricciones contradictorias). El gráfico no muestra área sombreada.</p></div>
+          <div class="case-card unbounded"><strong>No acotado</strong><p>La región se extiende infinitamente en la dirección de optimización. El sistema avisa «Problema no acotado».</p></div>
+          <div class="case-card multiple"><strong>Múltiples óptimos</strong><p>La función objetivo es paralela a una restricción activa. El sistema muestra los dos vértices extremos de la arista óptima.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Maximizar  Z = 5X1 + 4X2
+Sujeto a:
+  6X1 + 4X2 ≤ 24
+   X1 + 2X2 ≤ 6
+  X1, X2 ≥ 0
+
+➜ C1=5, C2=4 · R1: 6, 4, ≤, 24 · R2: 1, 2, ≤, 6
+✔ Resultado esperado: Z* = 21  en  (3, 1.5)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 2 — SIMPLEX
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="simplex">
+      <div class="section-header">
+        <div class="section-icon">🧮</div>
+        <div>
+          <div class="section-num">Sección 2</div>
+          <h2>Método Simplex</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>El Algoritmo Simplex recorre los vértices de la región factible de forma eficiente para encontrar el óptimo de un PL con cualquier número de variables. Parte de una SBF con variables de holgura e itera hasta optimizar. Incluye <strong>Análisis de Sensibilidad</strong> completo y soporte para nombres de variables y unidades.</p>
+      </div>
+
+      <div class="sub">
+        <h3>¿Cuándo usarlo?</h3>
+        <ul>
+          <li>El problema tiene <strong>más de 2 variables</strong>.</li>
+          <li>Todas las restricciones son de tipo <strong>≤</strong>.</li>
+          <li>Se necesita análisis de sensibilidad (rangos de optimalidad, precios sombra).</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Límites del sistema</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Variables</div><div class="lc-val">Máximo 10</div></div>
+          <div class="limit-card"><div class="lc-label">Restricciones</div><div class="lc-val">Máximo 12</div></div>
+          <div class="limit-card"><div class="lc-label">Tipos</div><div class="lc-val">Solo ≤</div></div>
+          <div class="limit-card"><div class="lc-label">Anti-ciclado</div><div class="lc-val">Regla de Bland (tras 50 iter.)</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Cómo ingresar los datos</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Seleccioná Maximizar / Minimizar y número de variables (1–10) y restricciones (1–12).</p></div>
+          <div class="step"><div class="step-num">2</div><p><em>(Opcional)</em> Asigná nombre y unidad a cada variable.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Ingresá los coeficientes de la función objetivo.</p></div>
+          <div class="step"><div class="step-num">4</div><p>Para cada restricción ingresá los coeficientes y el LD (siempre ≤).</p></div>
+          <div class="step"><div class="step-num">5</div><p>Presioná <strong>Resolver</strong>.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Tableau inicial y cada iteración con pivote resaltado.</li>
+          <li>Variable que entra y variable que sale por iteración.</li>
+          <li>Solución óptima: valor de cada variable y Z*.</li>
+          <li><strong>Análisis de Sensibilidad:</strong> rangos de optimalidad para Cj, rangos de factibilidad para bi, precios sombra.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Casos especiales</h3>
+        <div class="cases">
+          <div class="case-card infeasible"><strong>Infactible</strong><p>Detectado si algún LD es negativo y el modelo es inválido. Poco común con restricciones solo ≤.</p></div>
+          <div class="case-card unbounded"><strong>No acotado</strong><p>No hay razón de salida válida en alguna iteración (todos los coeficientes ≤ 0 en la columna pivote).</p></div>
+          <div class="case-card degenerate"><strong>Degeneración</strong><p>Variable básica con valor 0. Puede causar ciclado; el sistema usa la Regla de Bland automáticamente.</p></div>
+          <div class="case-card multiple"><strong>Múltiples óptimos</strong><p>Alguna variable no básica tiene costo reducido = 0 en el tableau final.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Maximizar  Z = 5X1 + 4X2 + 3X3
+Sujeto a:
+  6X1 + 4X2 + 2X3 ≤ 240
+  3X1 + 2X2 + 5X3 ≤ 270
+  5X1 + 6X2 + 5X3 ≤ 420
+
+➜ Variables: 3 · Restricciones: 3
+✔ Verificar el tableau final para Z* y valores óptimos.</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 3 — DOS FASES
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="dos-fases">
+      <div class="section-header">
+        <div class="section-icon">⚖️</div>
+        <div>
+          <div class="section-num">Sección 3</div>
+          <h2>Método Dos Fases</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>Resuelve PL con restricciones ≥, = o mixtas. <strong>Fase 1:</strong> minimiza la suma de variables artificiales para encontrar una SBF. <strong>Fase 2:</strong> optimiza el objetivo original con la SBF hallada. Usa <strong>aritmética exacta con Fraction</strong> (sin errores de redondeo).</p>
+      </div>
+
+      <div class="sub">
+        <h3>¿Cuándo usarlo?</h3>
+        <ul>
+          <li>El problema tiene restricciones <strong>≥ o =</strong> (o mixtas con ≤).</li>
+          <li>Se necesita exactitud numérica (resultados como fracciones exactas).</li>
+          <li>Se quiere ver el tableau completo de ambas fases paso a paso.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Límites del sistema</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Variables</div><div class="lc-val">Máximo 8</div></div>
+          <div class="limit-card"><div class="lc-label">Restricciones</div><div class="lc-val">Máximo 12</div></div>
+          <div class="limit-card"><div class="lc-label">Tipos</div><div class="lc-val">≤, ≥ y = (cualquier combinación)</div></div>
+          <div class="limit-card"><div class="lc-label">Aritmética</div><div class="lc-val">Exacta con Fraction</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Cómo ingresar los datos</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Seleccioná objetivo y número de variables (1–8) / restricciones (1–12).</p></div>
+          <div class="step"><div class="step-num">2</div><p>Ingresá los coeficientes de la función objetivo.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Para cada restricción: coeficientes, tipo (≤, ≥ o =) y LD.</p></div>
+          <div class="step"><div class="step-num">4</div><p>Presioná <strong>Resolver</strong>.</p></div>
+        </div>
+        <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">Podés escribir fracciones directamente: <code>3/4</code>, <code>-1/2</code></p>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Tableau completo de cada iteración de <strong>Fase 1</strong>.</li>
+          <li>Resultado de Fase 1: factible (pasa a Fase 2) o infactible.</li>
+          <li>Tableau completo de cada iteración de <strong>Fase 2</strong>.</li>
+          <li>Solución con valores exactos en fracciones (ej: X1 = 7/3).</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Casos especiales</h3>
+        <div class="cases">
+          <div class="case-card infeasible"><strong>Infactible</strong><p>Fase 1 termina con alguna artificial &gt; 0 en la base. Se declara infactibilidad.</p></div>
+          <div class="case-card degenerate"><strong>Artificial en base con valor 0</strong><p>Degeneración al final de Fase 1. El sistema la maneja automáticamente.</p></div>
+          <div class="case-card unbounded"><strong>No acotado</strong><p>Detectado en Fase 2 igual que en Simplex estándar.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Minimizar  Z = 2X1 + 3X2
+Sujeto a:
+  X1 + X2  ≥ 4
+  X1 + 3X2 = 6
+  X1, X2 ≥ 0
+
+➜ Variables: 2 · Restricciones: 2 (una ≥ y una =)
+✔ Resultado esperado: Z* = 7  en  (3, 1)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 4 — GRAN M
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="gran-m">
+      <div class="section-header">
+        <div class="section-icon">Ⓜ️</div>
+        <div>
+          <div class="section-num">Sección 4</div>
+          <h2>Método Gran M</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>Alternativa al Dos Fases: penaliza las variables artificiales con un coeficiente M muy grande en la función objetivo, forzando al Simplex a sacarlas de la base. La app usa M <strong>simbólico</strong> (representado como <code>a + b·M</code>) para mostrar coeficientes exactos. Incluye un <strong>parser de texto</strong>: pegá el modelo en formato natural.</p>
+      </div>
+
+      <div class="sub">
+        <h3>¿Cuándo usarlo?</h3>
+        <ul>
+          <li>El problema tiene restricciones ≥ o = y se prefiere un único tableau (sin dos fases separadas).</li>
+          <li>El modelo está disponible como texto libre (parser automático).</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Cómo ingresar los datos</h3>
+        <p><strong>Opción A — Formulario:</strong> igual que Dos Fases (objetivo, variables, restricciones).</p>
+        <p style="margin-top:8px"><strong>Opción B — Parser de texto:</strong></p>
+        <div class="example-box" style="margin-top:8px">
+          <pre>Max Z = 3x1 + 5x2
+s.a.
+x1 + x2 &lt;= 4
+x1 + 3x2 &gt;= 6
+x1, x2 &gt;= 0</pre>
+        </div>
+        <p style="margin-top:8px;font-size:.85rem;color:var(--muted)">El sistema reconoce: <code>Max</code>, <code>Min</code>, <code>Maximizar</code>, <code>Minimizar</code>, <code>s.a.</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>=</code>.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Tableau inicial con columnas M simbólicas (ej: <code>3 - 2M</code>).</li>
+          <li>Tableau de cada iteración con variable que entra/sale.</li>
+          <li>Solución final con valores de variables y Z*.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Maximizar  Z = 3X1 + 2X2
+Sujeto a:
+  X1 + X2 = 4
+  X1      ≥ 1
+  X2      ≥ 1
+
+✔ Resultado esperado: Z* = 11  en  (3, 1)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 5 — MOD / MODI
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="modi">
+      <div class="section-header">
+        <div class="section-icon">🔄</div>
+        <div>
+          <div class="section-num">Sección 5</div>
+          <h2>Método MOD / MODI (Transporte)</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>El <strong>Método de Distribución Modificada (MODI)</strong> optimiza el Problema de Transporte. Calcula multiplicadores u_i y v_j, evalúa índices de mejora δ_ij = c_ij − u_i − v_j para celdas no básicas y, si algún δ_ij &lt; 0, traza un ciclo stepping-stone para mejorar la solución. Incluye <strong>balanceo automático</strong>.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Límites del sistema</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Dimensión máxima</div><div class="lc-val">10 orígenes × 10 destinos</div></div>
+          <div class="limit-card"><div class="lc-label">Balanceo</div><div class="lc-val">Automático (fila/col ficticia)</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Cómo ingresar los datos</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Indicá número de orígenes (m) y destinos (n).</p></div>
+          <div class="step"><div class="step-num">2</div><p>Ingresá el vector de ofertas y el vector de demandas.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Completá la matriz de costos C (m filas × n columnas).</p></div>
+          <div class="step"><div class="step-num">4</div><p>Presioná <strong>Resolver</strong>.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Multiplicadores u_i y v_j por iteración.</li>
+          <li>Índices de mejora δ_ij para celdas no básicas.</li>
+          <li>Ciclo stepping-stone trazado (con signos + y −).</li>
+          <li>Costo total óptimo Z* = Σ c_ij · x_ij.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Casos especiales</h3>
+        <div class="cases">
+          <div class="case-card degenerate"><strong>Degeneración</strong><p>Celdas básicas &lt; m+n−1. Se agrega asignación ε en una celda estratégica.</p></div>
+          <div class="case-card multiple"><strong>Soluciones múltiples</strong><p>Algún δ_ij = 0 en celda no básica al finalizar. Existen planes alternativos de igual costo.</p></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Orígenes: 2  (oferta: [30, 40])
+Destinos: 3  (demanda: [20, 30, 20])
+Costos:
+       D1  D2  D3
+  O1 [  2   3   1 ]
+  O2 [  5   4   8 ]
+
+Σoferta = 70 = Σdemanda (balanceado)</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 6 — VOGEL
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="vogel">
+      <div class="section-header">
+        <div class="section-icon">🚚</div>
+        <div>
+          <div class="section-num">Sección 6</div>
+          <h2>Método de Vogel (Transporte)</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>Calcula una <strong>Solución Básica Factible Inicial (SBFI)</strong> de alta calidad para problemas de transporte usando penalizaciones (diferencia entre los dos costos más bajos por fila/columna). La solución de Vogel suele estar muy cercana al óptimo. La app incluye verificación u-v de optimalidad automática al finalizar.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Límites del sistema</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Dimensión máxima</div><div class="lc-val">10 × 10</div></div>
+          <div class="limit-card"><div class="lc-label">Verificación u-v</div><div class="lc-val">Incluida automáticamente</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Tabla de penalizaciones en cada iteración.</li>
+          <li>Asignación realizada por paso (cantidad y celda elegida).</li>
+          <li>Matriz de asignaciones final (SBFI) y costo total.</li>
+          <li><strong>Verificación u-v:</strong> si todos δ_ij ≥ 0 → solución óptima; si no → aplicar MODI.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Orígenes: 2  |  Destinos: 3
+Costos:
+       D1  D2  D3
+  O1 [  2   3   1 ]
+  O2 [  5   4   8 ]
+Oferta: [30, 40]  |  Demanda: [20, 30, 20]
+
+Penalización col D3 = 8−1 = 7  → Primera asignación: O1→D3</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         SECCIÓN 7 — REGRESIÓN
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="regresion">
+      <div class="section-header">
+        <div class="section-icon">📉</div>
+        <div>
+          <div class="section-num">Sección 7</div>
+          <h2>Regresión Minimax (Simplex)</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>¿Qué es?</h3>
+        <p>La <strong>Regresión Minimax</strong> (L∞ / Chebyshev) ajusta una recta ŷ = a + bx minimizando el <em>error máximo absoluto</em> en lugar de la suma de cuadrados. El problema se transforma en un PL y se resuelve con el Método Dos Fases. La app muestra el tableau completo de cada fase.</p>
+      </div>
+
+      <div class="sub">
+        <h3>¿Cuándo usarlo?</h3>
+        <ul>
+          <li>El criterio de ajuste es el peor error individual.</li>
+          <li>Una única desviación grande es inaceptable (aplicaciones de ingeniería).</li>
+          <li>Como ejercicio de transformación de problemas a formato PL.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Límites del sistema</h3>
+        <div class="limits-grid">
+          <div class="limit-card"><div class="lc-label">Puntos (x, y)</div><div class="lc-val">Mínimo 3, máximo 12</div></div>
+          <div class="limit-card"><div class="lc-label">Rango coordenadas</div><div class="lc-val">−1 000 000 a +1 000 000</div></div>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Cómo ingresar los datos</h3>
+        <div class="steps">
+          <div class="step"><div class="step-num">1</div><p>Indicá el número de puntos (3–12).</p></div>
+          <div class="step"><div class="step-num">2</div><p>Para cada punto ingresá el valor de <strong>x</strong> y el valor de <strong>y</strong>.</p></div>
+          <div class="step"><div class="step-num">3</div><p>Presioná <strong>Resolver</strong>.</p></div>
+        </div>
+        <p style="margin-top:10px;font-size:.85rem;color:var(--muted)">Los puntos no necesitan estar ordenados por x.</p>
+      </div>
+
+      <div class="sub">
+        <h3>Resultados</h3>
+        <ul>
+          <li>Parámetros: â (intercepto) y b̂ (pendiente).</li>
+          <li>Z* = error máximo absoluto minimizado.</li>
+          <li>Tabla de residuos: y_i, ŷ_i, |error_i|.</li>
+          <li>Tableau completo de Fase 1 y Fase 2.</li>
+        </ul>
+      </div>
+
+      <div class="sub">
+        <h3>Ejemplo rápido</h3>
+        <div class="example-box">
+          <div class="ex-label">🧪 Ejemplo</div>
+          <pre>Puntos: (1, 1), (2, 3), (3, 2), (4, 5)
+
+➜ n=4, ingresá los 4 pares (x, y)
+✔ Resultado: â y b̂ tales que max|residuo| es mínimo</pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         TABLA DE REFERENCIA
+    ══════════════════════════════════════════════════════ -->
+    <section class="section" id="referencia">
+      <div class="section-header">
+        <div class="section-icon">📋</div>
+        <div>
+          <div class="section-num">Referencia</div>
+          <h2>Tablas Comparativas</h2>
+        </div>
+      </div>
+
+      <div class="sub">
+        <h3>Compatibilidad de tipos de restricción</h3>
+        <table class="cmp-table">
+          <thead><tr><th>Método</th><th>≤</th><th>≥</th><th>=</th></tr></thead>
+          <tbody>
+            <tr><td>Gráfico</td><td class="yes">✔</td><td class="yes">✔</td><td class="no">✗</td></tr>
+            <tr><td>Simplex</td><td class="yes">✔</td><td class="no">✗</td><td class="no">✗</td></tr>
+            <tr><td>Dos Fases</td><td class="yes">✔</td><td class="yes">✔</td><td class="yes">✔</td></tr>
+            <tr><td>Gran M</td><td class="yes">✔</td><td class="yes">✔</td><td class="yes">✔</td></tr>
+            <tr><td>MOD / MODI</td><td class="na">N/A</td><td class="na">N/A</td><td class="na">N/A</td></tr>
+            <tr><td>Vogel</td><td class="na">N/A</td><td class="na">N/A</td><td class="na">N/A</td></tr>
+            <tr><td>Regresión</td><td class="na">N/A</td><td class="na">N/A</td><td class="na">N/A</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub" style="margin-top:28px">
+        <h3>Límites de tamaño</h3>
+        <table class="cmp-table">
+          <thead><tr><th>Método</th><th>Máx Variables</th><th>Máx Restricciones</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr><td>Gráfico</td><td>2 (fijo)</td><td>12</td><td>—</td></tr>
+            <tr><td>Simplex</td><td>10</td><td>12</td><td>Solo ≤</td></tr>
+            <tr><td>Dos Fases</td><td>8</td><td>12</td><td>≤, ≥, = OK</td></tr>
+            <tr><td>Gran M</td><td>Flexible</td><td>12</td><td>≤, ≥, = OK</td></tr>
+            <tr><td>MOD / MODI</td><td>—</td><td>—</td><td>Matriz 10×10 máx</td></tr>
+            <tr><td>Vogel</td><td>—</td><td>—</td><td>Matriz 10×10 máx</td></tr>
+            <tr><td>Regresión</td><td>—</td><td>—</td><td>3–12 puntos</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sub" style="margin-top:28px">
+        <h3>Glosario rápido</h3>
+        <dl class="glossary">
+          <div class="gl-item"><dt>PL</dt><dd>Programación Lineal</dd></div>
+          <div class="gl-item"><dt>SBF / SBFI</dt><dd>Solución Básica Factible (Inicial)</dd></div>
+          <div class="gl-item"><dt>LD / RHS</dt><dd>Lado Derecho de la restricción</dd></div>
+          <div class="gl-item"><dt>Tableau</dt><dd>Tabla del Simplex con restricciones y fila objetivo</dd></div>
+          <div class="gl-item"><dt>Pivote</dt><dd>Elemento seleccionado para la operación de fila</dd></div>
+          <div class="gl-item"><dt>Degeneración</dt><dd>Variable básica con valor 0</dd></div>
+          <div class="gl-item"><dt>Precio sombra</dt><dd>Aumento marginal de Z por unidad adicional del LD</dd></div>
+          <div class="gl-item"><dt>MODI</dt><dd>Modified Distribution Method (transporte)</dd></div>
+          <div class="gl-item"><dt>Minimax</dt><dd>Minimización del error máximo (norma L∞)</dd></div>
+          <div class="gl-item"><dt>u_i, v_j</dt><dd>Multiplicadores MODI para filas y columnas</dd></div>
+        </dl>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+// Sidebar active link on scroll
+const sections = document.querySelectorAll('.section');
+const links = document.querySelectorAll('.sidebar nav a');
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if(e.isIntersecting){
+      links.forEach(l => l.classList.remove('active'));
+      const link = document.querySelector(`.sidebar nav a[href="#${e.target.id}"]`);
+      if(link) link.classList.add('active');
+    }
+  });
+}, {rootMargin:'-30% 0px -60% 0px'});
+sections.forEach(s => obs.observe(s));
+</script>
+</body>
+</html>
